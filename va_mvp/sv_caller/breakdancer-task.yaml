@@ -1,0 +1,10 @@
+name: Breakdancer
+description: Run Breakdancer on a bam file
+
+inputParameters:
+
+outputParameters:
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/breakdancer'
+  cmd: |
