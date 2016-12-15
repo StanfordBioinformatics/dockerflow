@@ -5,21 +5,21 @@ defn:
 
 graph:
 - BRANCH:
-  - Breakdancer
-  - CNVnator
-  - BreakSeq
+#  - Breakdancer
+#  - CNVnator
+#  - BreakSeq
   - Pindel
 
 steps: 
-- defn:
-    name: Breakdancer
-  defnFile: breakdancer-task.yaml
-- defn:
-   name: CNVnator
-  defnFile: cnvnator-task.yaml
-- defn:
-    name: BreakSeq
-  defnFile: breakseq-task.yaml
+#- defn:
+#    name: Breakdancer
+#  defnFile: breakdancer-task.yaml
+#- defn:
+#   name: CNVnator
+#  defnFile: cnvnator-task.yaml
+#- defn:
+#    name: BreakSeq
+#  defnFile: breakseq-task.yaml
 - defn:
     name: Pindel
   defnFile: pindel-task.yaml

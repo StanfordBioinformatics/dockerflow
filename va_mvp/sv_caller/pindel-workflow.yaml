@@ -1,0 +1,13 @@
+version: v1alpha2
+defn:
+  name: Pindel_Workflow
+  description: Use Pindel to call structural variants.
+
+graph:
+- BRANCH:
+  - Pindel
+
+steps: 
+- defn:
+    name: Pindel
+  defnFile: pindel-task.yaml

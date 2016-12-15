@@ -91,6 +91,8 @@ The docker image is named "gcr.io/<your_project_name>/<task_name>". I haven't cr
 
 ##Building the Docker image
 
+This is the hardest part of building a bioinformatics Dockerflow. Mostly because you will have to install & configure bioinformatics software.
+
 Docker images are the engines that perform all the operations in Dockerflow. Each task is associated with a docker image and each image can be customized with executables and scripts specially designed to carry out that task.
 
 We will be borrowing from Greg McInnes's Pipelines API Demo to learn how to build docker images.
@@ -107,20 +109,10 @@ docker help
 docker pull ubuntu
 ```
 
-or
-
-```
-docker pull biocontainers/biocontainers
-```
-
 ###Launch interactive docker container
 
 ```
 docker run -ti ubuntu /bin/bash
-```
-
-```
-docker run -ti biocontainers/biocontainers
 ```
 
 ###Check if a docker container for your task already exists
@@ -156,10 +148,95 @@ root@bca9ac41b690:/# apt-get install g++
 root@bca9ac41b690:/# exit
 ```
 
+Commiting new docker image with utilities installed
+
 ```
 $ docker commit -m "Ubuntu with utilities" -a "pbilling" bca9ac41b690 sv_caller_base:1.0
 sha256:3b6cc05a3156981914249a610b871c36e2dcd762fb3e561616ed3a6810db8e8f
 ```
+
+Pindel requires the htslib library as a pre-req. Install it and then save image as samtools. http://www.htslib.org/download/
+
+####Install htslib
+```
+mkdir /usr/local/software
+# wget https://github.com/samtools/htslib/releases/download/1.3.2/htslib-1.3.2.tar.bz2
+# tar xvfj htslib-1.3.2.tar.bz2 
+# ./configure
+# make
+# make install
+# exit
+
+$ docker commit -m "Ubuntu with basic utils and htslib-1.3.2" -a "pbilling" 6376005c2412 htslib-1.3.2:1.0
+```
+
+####Install pindel
+```
+$ docker run -ti htslib-1.3.2:1.0
+
+# cd /usr/local/software
+# git clone git://github.com/genome/pindel.git
+# cd pindel
+# ./INSTALL ../htslib-1.3.3
+# cd demo
+# ../pindel -i simulated_config.txt -f simulated_reference.fa -o bamtest -c ALL
+# vi ~/.bashrc
+i
+export PATH=$PATH:/usr/local/software/pindel
+:wq
+``` 
+
+Now that we've got Pindel working we can start filling in the pindel task file. I don't know anything about the Pindel software, so I need to get an idea of how it will be used. Looking at the RUNME script that the Pindel authors have provided, I can get an idea of the arguments used in common use cases.
+
+####Update Pindel task file 
+
+```
+name: Pindel
+description: Run Pindel on a bam file
+
+inputParameters:
+- name: input_bam
+  type: file[]
+- name: bam_config_file
+  type: file
+- name: reference_fasta
+  type: file
+- name: output_prefix
+- name: name_of_chromosome
+- name: reference_name
+- name: reference_date
+
+outputParameters:
+- name: output_vcf
+  defaultValue: ${output_prefix}.vcf
+  type: file
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.0'
+  cmd: |
+    pindel -i ${bam_config_file} -f ${reference_fasta} -o ${output_prefix} -c ${name_of_chromosome}
+    pindel2vcf -P ${output_prefix} -r ${reference_fasta} -R ${reference_name} -d ${reference_date}
+```
+
+####Commit Pindel docker image to GCP
+```
+$ docker commit -m "Ubuntu with Pindel structural variant caller" -a "pbilling" 2da2aa077cc6 pindel:1.0
+$ docker tag pindel:1.0 gcr.io/gbsc-gcp-project-mvp/pindel:1.0
+$ gcloud docker push gcr.io/gbsc-gcp-project-mvp/pindel:1.0
+
+####Run Pindel task on GCP
+
+
+####Move on to the next task
+
+
+
+
+
+
+
+
+
 
 
 Install breakdancer
@@ -201,13 +278,7 @@ export PATH=$PATH:/opt/samtools/bin
 # make
 # make install
 
-####Install pindel
-```
-# cd home
-# git clone git://github.com/genome/pindel.git
-# cd pindel
-# ./INSTALL /opt/samtools/src/htslib-1.3.1
-# cp /opt/samtools/libhts.so.1 /home/pindel 
+
 
 ###Download test files
 ###Locally run process
