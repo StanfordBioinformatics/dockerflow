@@ -3,8 +3,13 @@ inputs:
     gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_1.bam
     gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_2.bam
     gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_3.bam
+  Pindel.input_bais: |
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_1.bam.bai
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_2.bam.bai
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_3.bam.bai
   Pindel.bam_config_file: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_config.txt
   Pindel.reference_fasta: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_reference.fa 
+  Pindel.reference_fai: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_reference.fa.fai
   Pindel.output_prefix: bamtest
   Pindel.name_of_chromosome: ALL
   Pindel.reference_name: Test

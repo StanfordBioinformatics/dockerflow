@@ -148,6 +148,19 @@ root@bca9ac41b690:/# apt-get install g++
 root@bca9ac41b690:/# exit
 ```
 
+Install gsutil. 
+
+This will be necessary for uploading files back to Google Cloud Storage. In theory dockerflow would take care of this, but the Google Pipelines API (?) adds numeric prefixes to all input/output files that makes their paths incompatible with the real file paths.
+```
+# apt-get install curl
+# apt-get install lsb-release
+# export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+# echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | tee /etc/apt/sources.list.d/google-cloud-sdk.list
+# curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+# apt-get update && apt-get install google-cloud-sdk
+# gcloud init
+```
+
 Commiting new docker image with utilities installed
 
 ```
@@ -188,6 +201,11 @@ export PATH=$PATH:/usr/local/software/pindel
 
 Now that we've got Pindel working we can start filling in the pindel task file. I don't know anything about the Pindel software, so I need to get an idea of how it will be used. Looking at the RUNME script that the Pindel authors have provided, I can get an idea of the arguments used in common use cases.
 
+#####Upload test files to Google Cloud storage
+```
+# gsutil cp simulated_* gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
+```
+
 ####Update Pindel task file 
 
 ```
@@ -224,20 +242,49 @@ $ docker commit -m "Ubuntu with Pindel structural variant caller" -a "pbilling" 
 $ docker tag pindel:1.0 gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 $ gcloud docker push gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 
-####Run Pindel task on GCP
+####Test Pindel task on GCP
+# dockerflow --project=
 
+#####Create a test folder on Google Cloud Storage
+
+#####Create args file
+The args file will store all the arguments that will be passed to your task(s). Because we are only passing inputs to the Pindel task, there is only one "inputs:" section. Each argument is specified according to the pattern: ```Task_name.argument_name: argument_value```.
+
+In the case of ```input_bams``` and ```input_bais```, we can use the pipe operator, "|", to specify a list of values to be passed to the argument.
+
+```
+inputs:
+  Pindel.input_bams: |
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_1.bam
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_2.bam
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_3.bam
+  Pindel.input_bais: |
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_1.bam.bai
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_2.bam.bai
+    gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_sample_3.bam.bai
+  Pindel.bam_config_file: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_config.txt
+  Pindel.reference_fasta: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_reference.fa 
+  Pindel.reference_fai: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_reference.fa.fai
+  Pindel.output_prefix: bamtest
+  Pindel.name_of_chromosome: ALL
+  Pindel.reference_name: Test
+  Pindel.reference_date: 20161214
+  Pindel.output_vcf: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/bamtest.vcf
+```
+
+#####Test Dockerflow task by running it locally
+```
+$ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel --runner=DirectPipelineRunner
+```
+
+#####Test Dockerflow task by running it on Google Cloud Platform
+```
+$ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
+```
 
 ####Move on to the next task
 
-
-
-
-
-
-
-
-
-
+##UNDER CONSTRUCTION
 
 Install breakdancer
 ```

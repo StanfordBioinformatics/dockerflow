@@ -4,29 +4,43 @@ description: Run Pindel on a bam file
 inputParameters:
 - name: input_bams
   type: file[]
+- name: input_bais
+  type: file[]
 - name: bam_config_file
   type: file
 - name: reference_fasta
+  type: file
+- name: reference_fai
   type: file
 - name: output_prefix
 - name: name_of_chromosome
 - name: reference_name
 - name: reference_date
-
-outputParameters:
 - name: output_vcf
-  defaultValue:: ${output_prefix}.vcf
-  type: file
+
+#outputParameters:
+#- name: output_vcf
+#  defaultValue:: ${output_prefix}.vcf
+#  type: file
 
 docker:
-  imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.0'
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.01'
   cmd: |
     export PATH=$PATH:/usr/local/software/pindel
-    ## DO THIS TOMORROW
-    for bam in input_bams:
-      chop prefix off input_bam
+    cd /mnt/data
+    for bam in *.bam; do raw_filename=`echo ${bam} | cut -f2 -d-`; mv ${bam} ${raw_filename}; done
+    for bai in *.bam.bai; do raw_filename=`echo ${bai} | cut -f2 -d-`; mv ${bai} ${raw_filename}; done
     pindel -i ${bam_config_file} -f ${reference_fasta} -o ${output_prefix} -c ${name_of_chromosome}
     pindel2vcf -P ${output_prefix} -r ${reference_fasta} -R ${reference_name} -d ${reference_date}
+    ls
+    gsutil cp ${output_prefix}.vcf ${output_vcf}
+
+#for bam in *.bam;
+#  do
+#    raw_filename=`echo ${bam} | cut -f2 -d-`;
+#    mv ${bam} ${raw_filename};
+#  done
+
 
 # ../pindel -p COLO-829_20-p_ok.txt -f hs_ref_chr20.fa -o colontumor -c 20
 # ../pindel2vcf -r hs_ref_chr20.fa -R HUMAN_G1K_V2 -d 20100101 -p colontumor_D -e 5
