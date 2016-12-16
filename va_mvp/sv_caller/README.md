@@ -9,7 +9,10 @@
 - Dockerflow
 - Step
 
-##Design structure of tasks in workflow
+## Install Dockerflow
+The main Dockerflow page has instructions for installing Dockerflow: https://github.com/googlegenomics/dockerflow
+
+## Design structure of tasks in workflow
 
 **Pattern 1**: If you want to run all task serially, you do not need to describe any branching pattern and can leave the branching section out of your workflow file.
 
@@ -35,7 +38,7 @@
 I will use pattern 2 to run all tasks in parallel, since none of my tasks rely on output from other tasks.
 
 
-##Write base Dockerflow workflow file
+## Write base Dockerflow workflow file
 
 Now that we know the tasks involved in our workflow and the structure of the workflow, we can draft a workflow document. This will serve as an outline as we build our Dockerflow.
 
@@ -47,12 +50,15 @@ defn:
 
 graph:
 - BRANCH:
+  - Pindel
   - Breakdancer
   - CNVnator
   - BreakSeq
-  - Pindel
 
 steps: 
+- defn:
+    name: Pindel
+  defnFile: pindel-task.yaml
 - defn:
     name: Breakdancer
   defnFile: breakdancer-task.yaml
@@ -62,9 +68,6 @@ steps:
 - defn:
     name: BreakSeq
   defnFile: breakseq-task.yaml
-- defn:
-    name: Pindel
-  defnFile: pindel-task.yaml
 args:
   inputs:
 ```
@@ -101,7 +104,7 @@ args:
   inputs:
 ```
 
-##Write base dockerflow task file
+## Write base dockerflow task file
 
 ```
 name: Pindel
@@ -116,9 +119,9 @@ docker:
   cmd: |
 ```
 
-This is the current draft of the Pindel task. The task file describes everything involved in executing the Pindel task. This includes inputs, outputs, and the commands that will be run in the Pindel docker image. Currently it only has values for the name, description, and docker:imageName.  As we figure out more about running Pindel, we can fill in these values.
+This is the current draft of 'pindel-task.yaml', the Pindel task file. The task file describes everything involved in executing the Pindel task. This includes inputs, outputs, and the commands that will be run in the Pindel docker image. Currently it only has values for the name, description, and docker:imageName.  As we figure out more about running Pindel, we can fill in these values.
 
-The docker image is named "gcr.io/<your_project_name>/<task_name>". I haven't created the docker image yet, but I already have enough information to infer what it will be named. Once I know more about how breakdancer works, I can fill in the sections for input/output parameters and the command to be run in docker.
+The docker image is named "gcr.io/<your_project_name>/<task_name>". We haven't created the docker image yet, but I already have enough information to infer what it will be named. Once I know more about how breakdancer works, I can fill in the sections for input/output parameters and the command to be run in docker.
 
 
 ##Building the Docker image
@@ -145,14 +148,18 @@ Launch an interactive Docker container from the ubuntu Docker image. A Docker co
 $ docker run -ti ubuntu /bin/bash
 ```
 
-If this runs successfully your command prompt should now look something like this: ```root@589558b93b5a:/#```. Congratulations, you are now working inside a Docker container!
+If this runs successfully your command prompt should now look something like this:
+```
+root@589558b93b5a:/#
+``` 
+Congratulations, you are now working inside a Docker container!
 
 ###Structuring Docker images
 When building a Docker image, we want to keep it install the minimum number of tools required to perform the specific task we are working on. This will allow us to keep each Docker image small and avoid any compatibility issues between different softwares and dependencies.
 
 Since we want to run four different tools, we will likely be using four different Docker images; each one specifically configured for each task. However, there are common utilities that we will likely use in all our Docker images. Because of this, we are going to first create a Docker image with some common utilities, and then use that as the base to make each of our other task-specific images.
 
-###Adding tools to a Docker container
+### Add tools to the Docker container
 
 The 'ubuntu' image we are using has only the bare bones of the Ubuntu OS. In order to get, install, and run our bioinformatics software we are going to need to get additional utilities.
 
@@ -160,24 +167,28 @@ We can try inferring which utilities we'll need by looking at the download & ins
 
 From previous experience and by looking at the dependencies for our software packages, I'm going to install the following utlities and libraries.
 
+General utilities
 ```
-# General utilities
 # apt-get update
 # apt-get install wget
 # apt-get install curl
 # apt-get install vim
 # apt-get install unzip
 # apt-get install git  
+```
 
-# Required for samtools
+Required for samtools
+```
 # apt-get install tar
 # apt-get install bzip2
 # apt-get install make
 # apt-get install gcc
 # apt-get install libncurses5-dev
 # apt-get install zlib1g-dev
+```
 
-# Required for pindel
+Required for pindel
+```
 # apt-get install g++
 ```
 
@@ -237,8 +248,15 @@ Run Pindel in the Docker container to verify that it has been installed properly
 # ../pindel -i simulated_config.txt -f simulated_reference.fa -o bamtest -c ALL
 ``` 
 
-####Update Pindel task file 
-With Pindel installed in our container, we can start filling in the Pindel task file. I don't know anything about the Pindel software, so I need to get an idea of how it will be used. By looking at the RUNME script that the Pindel authors have provided, we can get an idea of common use-cases and arguments and add those to our task file.
+#### Upload test files to Google Cloud storage
+We've verified that Pindel has been successfully installed in our Docker container, but before we commit our container to an image, let's upload some of the Pindel demo files to Google Cloud Storage. These will be useful for testing our Pindel Dockerflow task.
+
+```
+# gsutil cp simulated_* gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
+```
+
+#### Update Pindel task file 
+With Pindel installed in our container, we can start filling in the Pindel task file. First, we need to figure out how to run Pindel. The Pindel authors have conveniently provided a RUNME script that will give us an idea of common use-cases and arguments. We can also read the documentation. And now let's add those to the Pindel task file.
 
 ```
 name: Pindel
@@ -257,23 +275,26 @@ inputParameters:
 - name: reference_date
 
 outputParameters:
-- name: output_vcf
-  defaultValue: ${output_prefix}.vcf
-  type: file
+ - name: output_vcf
+   defaultValue: ${output_prefix}.vcf
+   type: file
+ 
 
 docker:
   imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.0'
   cmd: |
+    export PATH=$PATH:/usr/local/software/pindel
     pindel -i ${bam_config_file} -f ${reference_fasta} -o ${output_prefix} -c ${name_of_chromosome}
     pindel2vcf -P ${output_prefix} -r ${reference_fasta} -R ${reference_name} -d ${reference_date}
 ```
+##### inputParameters
+Because we may have multiple bam files, we use "type: file[]" to specify that "input_bam" represents a list of files instead of just a single one. I am only specifying one file for "bam_config_file" and "reference_fasta", so those are of "type: file".
 
-####Upload test files to Google Cloud storage
-We've verified that Pindel has been successfully installed in our Docker container, but before we commit our container to an image, let's upload some of the Pindel demo files to Google Cloud Storage. These will be useful for testing our Pindel Dockerflow task.
+##### outputParameters
+In the "outputParameters" section, I have specified one file for output. Once all docker commands are complete Dockerflow will look for a file  matching this name and try to upload it the the workspace we have specified in Google Cloud Storage.
 
-```
-# gsutil cp simulated_* gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
-```
+##### docker command
+Here we use the pipe operator "|" to specify a list of commands that will be run serially, in our docker container. First we add the path of the Pindel executable to the environment variable "PATH" so that we can run Pindel from the command-line using only the name of the executable, "pindel". The following two commands will run "pindel" and then "pindel2vcf" to generate our output VCF file.
 
 ####Commit Pindel docker image to GCP
 In addition to commiting our container to an image, we'll also be uploading this image to the GCP Container Engine Registry so that we can use it with our Dockerflow tasks.
@@ -290,8 +311,8 @@ $ docker tag pindel:1.0 gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 $ gcloud docker push gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 ```
 
-#####Create args file
-The args file will store all the arguments that will be passed to your task(s). Because we are only passing inputs to the Pindel task, there is only one "inputs:" section. Each argument is specified according to the pattern: ```Task_name.argument_name: argument_value```.
+##### Create args file
+The args file will store all the arguments that will be passed to our task(s). Because we are only passing inputs to the Pindel task, there is only  "inputs:" section. Each argument is specified according to the pattern: ```Task_name.argument_name: argument_value```.
 
 In the case of ```input_bams``` and ```input_bais```, we can use the pipe operator, "|", to specify a list of values to be passed to the argument.
 
