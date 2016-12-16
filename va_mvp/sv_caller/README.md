@@ -69,88 +69,122 @@ args:
   inputs:
 ```
 
+The first task I am going to add is Pindel, so for now I will comment out all the other branches and task definitions.
+
+```
+version: v1alpha2
+defn:
+  name: SV_Caller
+  description: Use multiple bioinformatics tools to call genomics structural variants.
+
+graph:
+- BRANCH:
+  - Pindel
+#  - Breakdancer
+#  - CNVnator
+#  - BreakSeq
+
+steps: 
+- defn:
+    name: Pindel
+  defnFile: pindel-task.yaml
+#- defn:
+#    name: Breakdancer
+#  defnFile: breakdancer-task.yaml
+#- defn:
+#   name: CNVnator
+#  defnFile: cnvnator-task.yaml
+#- defn:
+#    name: BreakSeq
+#  defnFile: breakseq-task.yaml
+args:
+  inputs:
+```
+
 ##Write base dockerflow task file
 
 ```
-name: Breakdancer
-description: Run Breakdancer on a bam file
+name: Pindel
+description: Run Pindel on a bam file
 
 inputParameters:
 
-outputParameters:
+#outputParameters:
 
 docker:
-  imageName: 'gcr.io/gbsc-gcp-project-mvp/breakdancer'
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.0'
   cmd: |
 ```
 
-This is my base task file. Currently it only has values for the name, description, and docker:imageName. 
+This is the current draft of the Pindel task. The task file describes everything involved in executing the Pindel task. This includes inputs, outputs, and the commands that will be run in the Pindel docker image. Currently it only has values for the name, description, and docker:imageName.  As we figure out more about running Pindel, we can fill in these values.
 
 The docker image is named "gcr.io/<your_project_name>/<task_name>". I haven't created the docker image yet, but I already have enough information to infer what it will be named. Once I know more about how breakdancer works, I can fill in the sections for input/output parameters and the command to be run in docker.
 
 
 ##Building the Docker image
+Docker images are the engines that perform all the operations in Dockerflow. Each task in our dockerflow will be associated with a docker image and each image can be customized with executables and scripts specially designed to carry out that task.
 
-This is the hardest part of building a bioinformatics Dockerflow. Mostly because you will have to install & configure bioinformatics software.
+We will be borrowing from the inimtable Greg McInnes's Pipelines API Demo to learn how to build docker images. You can also check out his demo here: https://github.com/StanfordBioinformatics/pipelines-api-examples/tree/master/demo 
 
-Docker images are the engines that perform all the operations in Dockerflow. Each task is associated with a docker image and each image can be customized with executables and scripts specially designed to carry out that task.
-
-We will be borrowing from Greg McInnes's Pipelines API Demo to learn how to build docker images.
-
-###Download base docker image
-
-First, download a basic docker image.
+###Launching a Docker Container
+First, check that Docker is running on your machine.
 
 ```
-docker help
+$ docker help
 ```
 
-```
-docker pull ubuntu
-```
-
-###Launch interactive docker container
+Now try downloading a Docker image containing a basic Ubuntu OS.
 
 ```
-docker run -ti ubuntu /bin/bash
+$ docker pull ubuntu
 ```
 
-###Check if a docker container for your task already exists
-
-Check the BioContainers Registry UI: http://biocontainers.pro/registry/#/
-
-
-###Add tools to docker container
-
-Add basic utilities to ubuntu docker image. To know which utilities you'll need you can try looking at the download & install instructions for all the tools you intend to use. You probably won't be able to infer all of them, especially for software that has to be compiled from source. That's fine; when you run into these you'll have to decide whether it's appropriate to go back and add those resources to your base ubuntu image or just install them on an image-by-image basis for your different tasks. Alternatively, you could create one docker image with the resources to do all of your tasks. The downside of this is that it will result in a larger docker image. However, I don't know if a larger size docker image would have any significant impact on performance. Probably not... it's still going to be relatively small.
-
-Question: At what point does size of a docker image significantly impact size/performance? Big right? For this one I think I'll just dump everything into same image. Seems like for most cases it makes sense to dump everything in one image
-
-Create new ubuntu image with utilities
+Launch an interactive Docker container from the ubuntu Docker image. A Docker container is a live instance of a Docker image and represents its own computing environment.
 
 ```
-root@bca9ac41b690:/# apt-get update
-root@bca9ac41b690:/# apt-get install wget
-root@bca9ac41b690:/# apt-get install vim
-root@bca9ac41b690:/# apt-get install unzip
-root@bca9ac41b690:/# apt-get install git  
-
-## Required for samtools
-root@bca9ac41b690:/# apt-get install tar
-root@bca9ac41b690:/# apt-get install bzip2
-root@bca9ac41b690:/# apt-get install make
-root@bca9ac41b690:/# apt-get install gcc
-root@bca9ac41b690:/# apt-get install libncurses5-dev
-root@bca9ac41b690:/# apt-get install zlib1g-dev
-
-## Required for pindel
-root@bca9ac41b690:/# apt-get install g++
-root@bca9ac41b690:/# exit
+$ docker run -ti ubuntu /bin/bash
 ```
 
-Install gsutil. 
+If this runs successfully your command prompt should now look something like this: ```root@589558b93b5a:/#```. Congratulations, you are now working inside a Docker container!
+
+###Structuring Docker images
+When building a Docker image, we want to keep it install the minimum number of tools required to perform the specific task we are working on. This will allow us to keep each Docker image small and avoid any compatibility issues between different softwares and dependencies.
+
+Since we want to run four different tools, we will likely be using four different Docker images; each one specifically configured for each task. However, there are common utilities that we will likely use in all our Docker images. Because of this, we are going to first create a Docker image with some common utilities, and then use that as the base to make each of our other task-specific images.
+
+###Adding tools to a Docker container
+
+The 'ubuntu' image we are using has only the bare bones of the Ubuntu OS. In order to get, install, and run our bioinformatics software we are going to need to get additional utilities.
+
+We can try inferring which utilities we'll need by looking at the download & install instructions for each of the tools we intend to use. We probably won't be able to infer all of them, especially for software that has to be compiled from source. That's fine; when we run into these we'll just have to decide whether it's appropriate to go back and add those resources to our base ubuntu image or install them on an image-by-image basis for each task. 
+
+From previous experience and by looking at the dependencies for our software packages, I'm going to install the following utlities and libraries.
+
+```
+# General utilities
+# apt-get update
+# apt-get install wget
+# apt-get install curl
+# apt-get install vim
+# apt-get install unzip
+# apt-get install git  
+
+# Required for samtools
+# apt-get install tar
+# apt-get install bzip2
+# apt-get install make
+# apt-get install gcc
+# apt-get install libncurses5-dev
+# apt-get install zlib1g-dev
+
+# Required for pindel
+# apt-get install g++
+```
+
+We are also going to install the Google Storage Utility, "gsutil". 
 
 This will be necessary for uploading files back to Google Cloud Storage. In theory dockerflow would take care of this, but the Google Pipelines API (?) adds numeric prefixes to all input/output files that makes their paths incompatible with the real file paths.
+
 ```
 # apt-get install curl
 # apt-get install lsb-release
@@ -161,52 +195,50 @@ This will be necessary for uploading files back to Google Cloud Storage. In theo
 # gcloud init
 ```
 
-Commiting new docker image with utilities installed
+With these basic tools installed, exit the container and commit it to a new Docker image.
 
 ```
+# root@bca9ac41b690:/# exit
 $ docker commit -m "Ubuntu with utilities" -a "pbilling" bca9ac41b690 sv_caller_base:1.0
 sha256:3b6cc05a3156981914249a610b871c36e2dcd762fb3e561616ed3a6810db8e8f
 ```
 
-Pindel requires the htslib library as a pre-req. Install it and then save image as samtools. http://www.htslib.org/download/
+Now let's launch a new container of our newly created sv_caller_base:1.0 image and install Pindel.
 
-####Install htslib
 ```
-mkdir /usr/local/software
+$ docker run -ti sv_caller_base:1.0
+```
+
+Pindel requires the htslib library as a pre-req, so we'll need to install it: http://www.htslib.org/download/
+
+```
+# mkdir /usr/local/software
 # wget https://github.com/samtools/htslib/releases/download/1.3.2/htslib-1.3.2.tar.bz2
 # tar xvfj htslib-1.3.2.tar.bz2 
 # ./configure
 # make
 # make install
 # exit
-
-$ docker commit -m "Ubuntu with basic utils and htslib-1.3.2" -a "pbilling" 6376005c2412 htslib-1.3.2:1.0
 ```
 
-####Install pindel
-```
-$ docker run -ti htslib-1.3.2:1.0
+And now let's install Pindel.
 
+```
 # cd /usr/local/software
 # git clone git://github.com/genome/pindel.git
 # cd pindel
 # ./INSTALL ../htslib-1.3.3
+```
+
+Run Pindel in the Docker container to verify that it has been installed properly.
+
+```
 # cd demo
 # ../pindel -i simulated_config.txt -f simulated_reference.fa -o bamtest -c ALL
-# vi ~/.bashrc
-i
-export PATH=$PATH:/usr/local/software/pindel
-:wq
 ``` 
 
-Now that we've got Pindel working we can start filling in the pindel task file. I don't know anything about the Pindel software, so I need to get an idea of how it will be used. Looking at the RUNME script that the Pindel authors have provided, I can get an idea of the arguments used in common use cases.
-
-#####Upload test files to Google Cloud storage
-```
-# gsutil cp simulated_* gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
-```
-
 ####Update Pindel task file 
+With Pindel installed in our container, we can start filling in the Pindel task file. I don't know anything about the Pindel software, so I need to get an idea of how it will be used. By looking at the RUNME script that the Pindel authors have provided, we can get an idea of common use-cases and arguments and add those to our task file.
 
 ```
 name: Pindel
@@ -236,16 +268,27 @@ docker:
     pindel2vcf -P ${output_prefix} -r ${reference_fasta} -R ${reference_name} -d ${reference_date}
 ```
 
-####Commit Pindel docker image to GCP
+####Upload test files to Google Cloud storage
+We've verified that Pindel has been successfully installed in our Docker container, but before we commit our container to an image, let's upload some of the Pindel demo files to Google Cloud Storage. These will be useful for testing our Pindel Dockerflow task.
+
 ```
+# gsutil cp simulated_* gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
+```
+
+####Commit Pindel docker image to GCP
+In addition to commiting our container to an image, we'll also be uploading this image to the GCP Container Engine Registry so that we can use it with our Dockerflow tasks.
+
+```
+# exit
 $ docker commit -m "Ubuntu with Pindel structural variant caller" -a "pbilling" 2da2aa077cc6 pindel:1.0
+```
+
+After committing, name the image with the proper Google Container Registry path: gcr.io/our-project-name/this-image-name:this-image-version
+
+```
 $ docker tag pindel:1.0 gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 $ gcloud docker push gcr.io/gbsc-gcp-project-mvp/pindel:1.0
-
-####Test Pindel task on GCP
-# dockerflow --project=
-
-#####Create a test folder on Google Cloud Storage
+```
 
 #####Create args file
 The args file will store all the arguments that will be passed to your task(s). Because we are only passing inputs to the Pindel task, there is only one "inputs:" section. Each argument is specified according to the pattern: ```Task_name.argument_name: argument_value```.
@@ -285,6 +328,10 @@ $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.y
 ####Move on to the next task
 
 ##UNDER CONSTRUCTION
+
+###Check if a docker container for your task already exists
+
+Check the BioContainers Registry UI: http://biocontainers.pro/registry/#/
 
 Install breakdancer
 ```
