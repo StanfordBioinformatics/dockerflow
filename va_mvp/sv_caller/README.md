@@ -345,6 +345,8 @@ $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.y
 ```
 $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
 ```
+## TO DO
+Add description of handling files using standard dockerflow protocol manually using gsutil
 
 ####Move on to the next task
 
@@ -406,3 +408,4 @@ Test dockerflow task on GCP
 Repeat steps 1-4 for each task in workflow
 Write dockerflow workflow file
 Write args file
+
