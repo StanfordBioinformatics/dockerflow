@@ -124,12 +124,12 @@ This is the current draft of 'pindel-task.yaml', the Pindel task file. The task 
 The docker image is named "gcr.io/<your_project_name>/<task_name>". We haven't created the docker image yet, but I already have enough information to infer what it will be named. Once I know more about how breakdancer works, I can fill in the sections for input/output parameters and the command to be run in docker.
 
 
-##Building the Docker image
+## Build the Docker image
 Docker images are the engines that perform all the operations in Dockerflow. Each task in our dockerflow will be associated with a docker image and each image can be customized with executables and scripts specially designed to carry out that task.
 
 We will be borrowing from the inimtable Greg McInnes's Pipelines API Demo to learn how to build docker images. You can also check out his demo here: https://github.com/StanfordBioinformatics/pipelines-api-examples/tree/master/demo 
 
-###Launching a Docker Container
+### Launching a Docker Container
 First, check that Docker is running on your machine.
 
 ```
@@ -154,7 +154,7 @@ root@589558b93b5a:/#
 ``` 
 Congratulations, you are now working inside a Docker container!
 
-###Structuring Docker images
+### Structuring Docker images
 When building a Docker image, we want to keep it install the minimum number of tools required to perform the specific task we are working on. This will allow us to keep each Docker image small and avoid any compatibility issues between different softwares and dependencies.
 
 Since we want to run four different tools, we will likely be using four different Docker images; each one specifically configured for each task. However, there are common utilities that we will likely use in all our Docker images. Because of this, we are going to first create a Docker image with some common utilities, and then use that as the base to make each of our other task-specific images.
@@ -192,7 +192,148 @@ Required for pindel
 # apt-get install g++
 ```
 
-We are also going to install the Google Storage Utility, "gsutil". 
+We are also going to install the Google Storage Utility, "gsutil". This may be useful for transferring to and from Google Cloud Storage.
+
+There are two methods you can use to handle file management in Dockerflow. 
+
+**Method 1: Native Dockerflow.** 
+The first is to use the native Dockerflow method. This is the easiest and most elegant solution; however, because of the way it tags files, it is not optimal for all cases. This is because files managed by Dockerflow have an arbitrary numerical identifier appended to the beginning of all filenames when they are loaded onto the datadisk. Further description of this behavior can be found in the second comment of this issue: https://github.com/googlegenomics/dockerflow/issues/16. 
+
+In cases where all input and output filenames are specified through by Dockerflow variables, this should be fine because Dockerflow knows to look for filenames with these appended IDs. However, if you are not explicity specifying all input and output filenames with Dockerflow input/output parameters, you will likely run into problems. Let's look at some examples demonstrating this behavior...
+
+```
+# Mark duplicate reads to avoid counting non-independent observations
+- defn:
+    name: "MarkDuplicates"
+    inputParameters:
+    - name: "input_bams"
+      type: "file[]"
+      inputBinding:
+        itemSeparator: " INPUT="
+    - name: "output_bam_basename"
+    - name: "metrics_filename"
+    outputParameters:
+    - name: "output_bam"
+      defaultValue: "${output_bam_basename}.bam"
+      type: file
+    - name: "duplicate_metrics"
+      defaultValue: "${metrics_filename}"
+      type: file
+    resources:
+      minimumRamGb: "7"
+      preemptible: true
+    docker:
+      imageName: "broadinstitute/genomes-in-the-cloud:2.2.3-1469027018"
+      cmd: |
+        java -Xmx4000m -jar /usr/gitc/picard.jar \
+          MarkDuplicates \
+          INPUT=${input_bams} \
+          OUTPUT=${output_bam} \
+          METRICS_FILE=${duplicate_metrics} \
+          VALIDATION_STRINGENCY=SILENT \
+          OPTICAL_DUPLICATE_PIXEL_DISTANCE=2500 \
+          ASSUME_SORT_ORDER="queryname" \
+          CREATE_MD5_FILE=true
+```
+
+This is an example "MarkDuplicates" task from the "gatk-workflow.yaml" example provided with Dockerflow. In this case, there is one set of inputs files, "input_bams", and two output files, "output_bam" and "duplicate_metrics". The filenames for all input and output files needed to run MarkDuplicates are explicity passed to MarkDuplicates through Dockerflow variables. At runtime, Dockerflow will automatically append the appropriate numerical ID to the filenames of the input files, run the task, find the output files with the same appended IDs, and then upload them back to GCS, while removing the IDs. If all goes well, the user never has to know about them.
+
+Now let's look at an example using the native Dockerflow method for managing Pindel files:
+
+```
+name: Pindel
+description: Run Pindel on a bam file
+
+inputParameters:
+- name: input_bams
+  type: file[]
+- name: input_bais
+  type: file[]
+- name: bam_config_file
+  type: file
+- name: reference_fasta
+  type: file
+- name: reference_fai
+  type: file
+- name: output_prefix
+- name: name_of_chromosome
+- name: reference_name
+- name: reference_date
+
+outputParameters:
+- name: output_vcf
+  defaultValue: ${output_prefix}.vcf
+  type: file
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.0'
+  cmd: |
+    export PATH=$PATH:/usr/local/software/pindel
+    pindel -i ${bam_config_file} -f ${reference_fasta} -o ${output_prefix} -c ${name_of_chromosome}
+    pindel2vcf -P ${output_prefix} -r ${reference_fasta} -R ${reference_name} -d ${reference_date} -v ${output_vcf}
+```
+
+This doesn't work. Why not?
+
+Pindel takes, as input, a bam_config_file that is a text file with three columns specifying the bam name, insert size, and sample label. The sample config file for the Pindel demo looks like this:
+
+```
+simulated_sample_1.bam	250	SAMPLE1
+simulated_sample_2.bam	250	SAMPLE2
+simulated_sample_3.bam	250	SAMPLE3
+```
+
+However, if I pass this file as input to my Dockerflow Pindel task, it will fail. Pindel will be looking for files named "simulated_sample_N.bam", but the files on the datadisk will be named "NNNNNNNNNN-simulated_sample_N.bam" where the "N"s represent arbitratry integers. 
+
+To get this to work, I need to know the specific ID that will be attached to the files in order to specify the filenames in the config file. Because, I can't know this before runtime, I would have to create the config file as part of the commands I run in the Dockerflow task. This is doable, but would probably involve obtuse bash commands that I don't know, and am not interested in learning. 
+
+Alternatively, we could try adding processing steps to chop off the IDs after they have been transferred to our datadisk. Something like this...
+
+```
+name: Pindel
+description: Run Pindel on a bam file
+
+inputParameters:
+- name: input_bams
+  type: file[]
+- name: input_bais
+  type: file[]
+- name: bam_config_file
+  type: file
+- name: reference_fasta
+  type: file
+- name: reference_fai
+  type: file
+- name: output_prefix
+- name: name_of_chromosome
+- name: reference_name
+- name: reference_date
+- name: output_vcf
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.01'
+  cmd: |
+    export PATH=$PATH:/usr/local/software/pindel
+    cd /mnt/data
+    for bam in *.bam; do raw_filename=`echo ${bam} | cut -f2 -d-`; mv ${bam} ${raw_filename}; done
+    for bai in *.bam.bai; do raw_filename=`echo ${bai} | cut -f2 -d-`; mv ${bai} ${raw_filename}; done
+    pindel -i ${bam_config_file} -f ${reference_fasta} -o ${output_prefix} -c ${name_of_chromosome}
+    pindel2vcf -P ${output_prefix} -r ${reference_fasta} -R ${reference_name} -d ${reference_date}
+    gsutil cp ${output_prefix}.vcf ${output_vcf}
+``
+
+This option works, but it involves piped bash processing steps and at the end I am still using Cloud Storage utility, gsutil, to copy the output file back to Cloud Storage. Not only is it ugly, but it is confusing to interpret because it mixes two different file management methods. We always want to be concise and consistent. In this case, I'm not sure we can be concise, but since we already have to use gsutil, we can at least be consistent.
+
+**Method 2: Using gsutil to manage Dockerflow files.***
+
+Gsutil is "a python application that let's you access Cloud Storage from the command line" (https://cloud.google.com/storage/docs/gsutil). Instead of having Dockerflow manage files for us, we can do it ourselves, using gsutil. This is a less elegant solution that does not really fit within the Dockerflow schema, but is does afford us more freedom in file handling.
+
+## ADD THE GSUTIL METHOD HERE
+##
+##
+##
+##
+
 
 This will be necessary for uploading files back to Google Cloud Storage. In theory dockerflow would take care of this, but the Google Pipelines API (?) adds numeric prefixes to all input/output files that makes their paths incompatible with the real file paths.
 
