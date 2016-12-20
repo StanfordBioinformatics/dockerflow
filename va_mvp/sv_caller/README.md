@@ -1,9 +1,10 @@
 # Guide to building a structural variant caller Dockerflow
 
 ## Disclaimer
-Dockerflow is not an official Google product. This is not an official guide. I am not affiliated with Google.
+Dockerflow is not an official Google product. This is not an official guide nor was it written by a Googler.
 
 ## Overview
+This guide is designed to demonstrate effective practices for building Dockerflows to run workflows through Dataflow on the Google Cloud Platform.
 
 ## Outline
 - [Dictionary](#dictionary)
@@ -24,11 +25,8 @@ Dockerflow is not an official Google product. This is not an official guide. I a
 - [Bonus: Check if docker image already exists for task](#biocontainers)
 
 ## <a name="dictionary"></a>Dictionary
-- Task
-- Workflow
-- YAML
-- Dockerflow
-- Step
+- Task: A task describes a single operation in a workflow. Each task is associated with a YAML task file, a Docker image, and a set of inputs and outputs.
+- Workflow: A workflow is the orientation of a set of tasks to obtain a set of outputs. A workflow is described in a YAML file with descriptions of all tasks as well as the the orientation they are to be run.
 - GCP: Google Cloud Platform
 - GCS: Google Cloud Storage
 
