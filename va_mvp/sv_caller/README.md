@@ -308,7 +308,6 @@ outputParameters:
    defaultValue: ${output_prefix}.vcf
    type: file
  
-
 docker:
   imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.0'
   cmd: |
