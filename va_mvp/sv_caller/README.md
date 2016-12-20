@@ -106,7 +106,7 @@ Dockerflow allows us to control the orientation in which tasks are performed usi
 ```
 In this case, Breakdancer and Pindel will start running at the same time. However, CNVnator will wait for Breakdancer to finish, before running, and BreakSeq will run after it. This would be useful if CNVnator relied on output from Breakdancer and BreakSeq relied on output from Breakdancer & CNVnator.
 
-We will use pattern 2 to run all tasks in parallel, since none of our tasks rely on output from others. So our workflow file now looks like this:
+We will use **pattern 2** to run all tasks in parallel, since none of our tasks rely on output from others. So our workflow file now looks like this:
 
 ```
 version: v1alpha2
