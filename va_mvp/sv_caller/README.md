@@ -7,25 +7,35 @@ Dockerflow is not an official Google product. This is not an official guide. I a
 
 ## Outline
 - [Dictionary](#dictionary)
-- Install Dockerflow
-- Design structure of workflow tasks
-- Write base Dockerflow workflow file
-- Write base Dockerflow task file
-- Build the Docker image
-- Upload test files to Cloud Storage
-- 
+- [Install Dockerflow](#install-dockerflow)
+- [Design workflow tasks structure](#design-workflow)
+- [Write base Dockerflow workflow file](#base-workflow)
+- [Write base Dockerflow task file](#base-task)
+- [Build the Docker image](#build-docker)
+- [Upload test files to Cloud Storage](#upload-test-files)
+- [Update task file](#update-task)
+- [Choose a file management pattern](#file-management)
+- [Commit docker image to GCP](#commit-docker)
+- [Create args file](#create-args")
+- [Run Dockerflow in test mode](#run-test)
+- [Run Dockerflow locally with test files](#run-locally)
+- [Run Dockerflow on GCP with test files](#run-gcp)
+- [Rinse & repeat](#repeat)
+- [Bonus: Check if docker image already exists for task](#biocontainers)
 
-##<a name="dictionary"></a>Dictionary
+## <a name="dictionary"></a>Dictionary
 - Task
 - Workflow
 - YAML
 - Dockerflow
 - Step
+- GCP: Google Cloud Platform
+- GCS: Google Cloud Storage
 
-## Install Dockerflow
+## <a name="install-dockerflow"></a>Install Dockerflow
 Instructions for installing Dockerflow can be found on the main page of the repo: https://github.com/googlegenomics/dockerflow
 
-## Design structure of workflow tasks
+## <a name="design-workflow"></a>Design workflow tasks structure
 
 **Pattern 1**: If you want to run all task serially, you do not need to describe any branching pattern and can leave the branching section out of your workflow file.
 
@@ -51,7 +61,7 @@ Instructions for installing Dockerflow can be found on the main page of the repo
 We will use pattern 2 to run all tasks in parallel, since none of our tasks rely on output from other tasks.
 
 
-## Write base Dockerflow workflow file
+## <a name="base-workflow"></a>Write base workflow file
 
 Now that we know the tasks involved in our workflow and the structure of the workflow, we can draft a workflow document. This will serve as an outline as we build our Dockerflow.
 
@@ -117,7 +127,7 @@ args:
   inputs:
 ```
 
-## Write base Dockerflow task file
+## <a name="base-task"></a>Write base Dockerflow task file
 
 ```
 name: Pindel
@@ -136,7 +146,7 @@ This is the current draft of 'pindel-task.yaml', the Pindel task file. The task 
 
 The docker image is named gcr.io/your_project_name/task_name. We haven't created the docker image yet, but I already have enough information to infer what it will be named. Once I know more about how breakdancer works, I can fill in the sections for input/output parameters and the command to be run in docker.
 
-## Build the Docker image
+## <a name="build-docker"></a>Build the Docker image
 Docker images are the engines that perform all the operations in Dockerflow. Each task in our dockerflow will be associated with a docker image and each image can be customized with executables and scripts specially designed to carry out that task.
 
 We will be borrowing from the inimtable Greg McInnes's Pipelines API Demo to learn how to build docker images. You can also check out his demo here: https://github.com/StanfordBioinformatics/pipelines-api-examples/tree/master/demo 
@@ -257,13 +267,13 @@ Run Pindel in the Docker container to verify that it has been installed properly
 # ../pindel -i simulated_config.txt -f simulated_reference.fa -o bamtest -c ALL
 ``` 
 
-## Upload test files to Google Cloud storage
+## <a name="upload-test-files"></a>Upload test files to Google Cloud storage
 We've verified that Pindel has been successfully installed in our Docker container, but before we commit our container to an image, let's upload some of the Pindel demo files to Google Cloud Storage. These will be useful for testing our Pindel Dockerflow task.
 
 ```
 # gsutil cp simulated_* gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
 ```
-## Update Pindel task file 
+## <a name="update-task"></a>Update task file 
 With Pindel installed in our container, we can start filling in the Pindel task file. First, we need to figure out how to run Pindel. The Pindel authors have conveniently provided a RUNME script that will give us an idea of common use-cases and arguments. We can also read the documentation. And now let's add those to the Pindel task file.
 
 ```
@@ -307,7 +317,7 @@ Here we use the pipe operator "|" to specify a list of commands that will be run
 
 Unfortunately, **these commands will not work.** The reason for this will be discussed in the next section.
 
-## Choosing a file management pattern for Dockerflow
+## <a name="file-management"></a>Choose a file management pattern
 There are multiple methods you can use to handle file management in Dockerflow. The first is to use the native Dockerflow method. This is the easiest and most elegant solution; however, because of the way it tags files, it is not optimal for all cases. **Files managed by Dockerflow have an arbitrary numerical identifier appended to the beginning of all filenames.** Further description of this behavior can be found in the second comment of this issue: https://github.com/googlegenomics/dockerflow/issues/16. 
 
 In cases where all input and output filenames are specified through by Dockerflow variables, this should be fine because Dockerflow knows to look for filenames with these appended IDs. However, if you are not explicity specifying all input and output filenames with Dockerflow input/output parameters, you will likely run into problems. Let's look at some examples demonstrating this behavior...
@@ -478,7 +488,7 @@ This option works and maintains some of the native processing features of Docker
 
 Godspeed.
 
-## Commit Pindel docker image to GCP
+## <a name="commit-docker"></a>Commit docker image to GCP
 In addition to commiting our container to an image, we'll also be uploading this image to the GCP Container Engine Registry so that we can use it with our Dockerflow tasks.
 
 ```
@@ -493,7 +503,7 @@ $ docker tag pindel:1.0 gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 $ gcloud docker push gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 ```
 
-## Create args file
+## <a name="create-args"></a>Create args file
 The args file will store all the arguments that will be passed to our task(s). Because we are only passing inputs to the Pindel task, there is only  "inputs:" section. Each argument is specified according to the pattern: ```Task_name.argument_name: argument_value```.
 
 ### Args file using hybrid approach
@@ -534,24 +544,24 @@ inputs:
   Pindel.output_vcf: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/${Pindel.output_prefix}.vcf
 ```
 
-## Run Dockerflow in test mode to confirm it is formatted correctly
+## <a name="run-test"></a>Run Dockerflow in test mode to confirm it is formatted correctly
 ```
 $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel --runner=DirectPipelineRunner --test
 ```
 
-## Run Dockerflow locally with test files
+## <a name="run-locally"></a>Run Dockerflow locally with test files
 ```
 $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel --runner=DirectPipelineRunner
 ```
 
-## Run Dockerflow on on Google Cloud Platform with test files
+## <a name="run-gcp"></a>Run Dockerflow on on Google Cloud Platform with test files
 ```
 $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
 ```
 
-## Rinse and repeat for additional workflows tasks
+## <a name="repeat"></a>Rinse and repeat for additional workflows tasks
 Good luck!
 
-## Bonus: Check if a docker image already exists for your task
+## <a name="biocontainers"></a>Bonus: Check if a docker image already exists for your task
 
 Check the BioContainers Registry UI: http://biocontainers.pro/registry/#/
