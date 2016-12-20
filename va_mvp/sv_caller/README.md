@@ -4,7 +4,7 @@
 Dockerflow is not an official Google product. This is not an official guide nor was it written by a Googler.
 
 ## Overview
-This guide is designed to demonstrate effective practices for building Dockerflows to run workflows through Dataflow on the Google Cloud Platform.
+This is a introductory operational guide to get started building Dockerflows.
 
 ## Outline
 - [Dictionary](#dictionary)
@@ -17,12 +17,14 @@ This guide is designed to demonstrate effective practices for building Dockerflo
 - [Update task file](#update-task)
 - [Choose a file management pattern](#file-management)
 - [Commit Docker image to GCP](#commit-docker)
-- [Create args file](#create-args")
+- [Create args file](#create-args)
 - [Perform workflow dry-run](#run-test)
 - [Test workflow locally](#run-locally)
 - [Test workflow on GCP](#run-gcp)
 - [Rinse & repeat](#repeat)
-- [Bonus: Check if docker image already exists for task](#biocontainers)
+- Additional Materials (Under Construction)
+  - [Get existing Docker images from Biocontainer](#biocontainers)
+  - [Allocating Resources to tasks](#resources)
 
 ## <a name="dictionary"></a>Dictionary
 - Task: A task describes a single operation in a workflow. Each task is associated with a YAML task file, a Docker image, and a set of inputs and outputs.
