@@ -1,16 +1,19 @@
-version: v1alpha2
+#version: v1alpha2
 defn:
   name: SV_Caller
   description: Use multiple bioinformatics tools to call genomics structural variants.
 
 graph:
 - BRANCH:
+  - Pindel
 #  - Breakdancer
 #  - CNVnator
 #  - BreakSeq
-  - Pindel
 
 steps: 
+- defn:
+    name: Pindel
+  defnFile: pindel-task-hybrid.yaml
 #- defn:
 #    name: Breakdancer
 #  defnFile: breakdancer-task.yaml
@@ -20,8 +23,6 @@ steps:
 #- defn:
 #    name: BreakSeq
 #  defnFile: breakseq-task.yaml
-- defn:
-    name: Pindel
-  defnFile: pindel-task.yaml
 args:
   inputs:
+  outputs:

@@ -1,0 +1,27 @@
+name: Pindel
+description: Run Pindel on a bam file
+
+inputParameters:
+- name: input_bams_dir
+- name: bam_config_file
+- name: reference_fasta
+- name: reference_fai
+- name: output_prefix
+- name: name_of_chromosome
+- name: reference_name
+- name: reference_date
+- name: output_vcf
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.01'
+  cmd: |
+    export PATH=$PATH:/usr/local/software/pindel
+    cd /mnt/data
+    gsutil cp -r ${input_bams_dir}/*.bam .
+    gsutil cp -r ${input_bams_dir}/*.bai .
+    gsutil cp ${bam_config_file} .
+    gsutil cp ${reference_fasta} .
+    gsutil cp ${reference_fai} .
+    pindel -i `basename ${bam_config_file}` -f `basename ${reference_fasta}` -o ${output_prefix} -c ${name_of_chromosome}
+    pindel2vcf -P ${output_prefix} -r `basename ${reference_fasta}` -R ${reference_name} -d ${reference_date}
+    gsutil cp ${output_prefix}.vcf ${output_vcf}

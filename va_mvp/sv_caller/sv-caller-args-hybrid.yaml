@@ -14,5 +14,5 @@ inputs:
   Pindel.name_of_chromosome: ALL
   Pindel.reference_name: Test
   Pindel.reference_date: 20161214
-  Pindel.output_vcf: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/bamtest.vcf
+  Pindel.output_vcf: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/${Pindel.output_vcf}
 

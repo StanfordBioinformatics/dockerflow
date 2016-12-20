@@ -1,0 +1,11 @@
+inputs:
+  Pindel.input_bams_dir: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
+  Pindel.bam_config_file: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_config.txt
+  Pindel.reference_fasta: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_reference.fa 
+  Pindel.reference_fai: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_reference.fa.fai
+  Pindel.output_prefix: bamtest
+  Pindel.name_of_chromosome: ALL
+  Pindel.reference_name: Test
+  Pindel.reference_date: 20161214
+  Pindel.output_vcf: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/${Pindel.output_prefix}.vcf
+

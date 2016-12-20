@@ -18,11 +18,6 @@ inputParameters:
 - name: reference_date
 - name: output_vcf
 
-#outputParameters:
-#- name: output_vcf
-#  defaultValue:: ${output_prefix}.vcf
-#  type: file
-
 docker:
   imageName: 'gcr.io/gbsc-gcp-project-mvp/pindel:1.01'
   cmd: |
@@ -34,16 +29,3 @@ docker:
     pindel2vcf -P ${output_prefix} -r ${reference_fasta} -R ${reference_name} -d ${reference_date}
     ls
     gsutil cp ${output_prefix}.vcf ${output_vcf}
-
-#for bam in *.bam;
-#  do
-#    raw_filename=`echo ${bam} | cut -f2 -d-`;
-#    mv ${bam} ${raw_filename};
-#  done
-
-
-# ../pindel -p COLO-829_20-p_ok.txt -f hs_ref_chr20.fa -o colontumor -c 20
-# ../pindel2vcf -r hs_ref_chr20.fa -R HUMAN_G1K_V2 -d 20100101 -p colontumor_D -e 5
-
-# ../pindel -i simulated_config.txt -f simulated_reference.fa -o bamtest -c ALL
-# ../pindel2vcf -r simulated_reference.fa -R HUMAN_G1K_V2 -d 20100101 -P bamtest
