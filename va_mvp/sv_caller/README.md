@@ -1,5 +1,8 @@
 # Guide to building a structural variant caller Dockerflow
 
+## Disclaimer
+Dockerflow is not an official Google product. This is not an official guide. I am not affiliated with Google.
+
 ## Overview
 
 ## Dictionary
@@ -35,7 +38,7 @@ Instructions for installing Dockerflow can be found on the main page of the repo
   - Pindel
 ```
 
-I will use pattern 2 to run all tasks in parallel, since none of my tasks rely on output from other tasks.
+We will use pattern 2 to run all tasks in parallel, since none of our tasks rely on output from other tasks.
 
 
 ## Write base Dockerflow workflow file
@@ -104,7 +107,7 @@ args:
   inputs:
 ```
 
-## Write base dockerflow task file
+## Write base Dockerflow task file
 
 ```
 name: Pindel
@@ -121,8 +124,7 @@ docker:
 
 This is the current draft of 'pindel-task.yaml', the Pindel task file. The task file describes everything involved in executing the Pindel task. This includes inputs, outputs, and the commands that will be run in the Pindel docker image. Currently it only has values for the name, description, and docker:imageName.  As we figure out more about running Pindel, we can fill in these values.
 
-The docker image is named "gcr.io/<your_project_name>/<task_name>". We haven't created the docker image yet, but I already have enough information to infer what it will be named. Once I know more about how breakdancer works, I can fill in the sections for input/output parameters and the command to be run in docker.
-
+The docker image is named gcr.io/your_project_name/task_name. We haven't created the docker image yet, but I already have enough information to infer what it will be named. Once I know more about how breakdancer works, I can fill in the sections for input/output parameters and the command to be run in docker.
 
 ## Build the Docker image
 Docker images are the engines that perform all the operations in Dockerflow. Each task in our dockerflow will be associated with a docker image and each image can be customized with executables and scripts specially designed to carry out that task.
@@ -245,13 +247,13 @@ Run Pindel in the Docker container to verify that it has been installed properly
 # ../pindel -i simulated_config.txt -f simulated_reference.fa -o bamtest -c ALL
 ``` 
 
-#### Upload test files to Google Cloud storage
+## Upload test files to Google Cloud storage
 We've verified that Pindel has been successfully installed in our Docker container, but before we commit our container to an image, let's upload some of the Pindel demo files to Google Cloud Storage. These will be useful for testing our Pindel Dockerflow task.
 
 ```
 # gsutil cp simulated_* gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
 ```
-#### Update Pindel task file 
+## Update Pindel task file 
 With Pindel installed in our container, we can start filling in the Pindel task file. First, we need to figure out how to run Pindel. The Pindel authors have conveniently provided a RUNME script that will give us an idea of common use-cases and arguments. We can also read the documentation. And now let's add those to the Pindel task file.
 
 ```
@@ -284,24 +286,23 @@ docker:
     pindel2vcf -P ${output_prefix} -r ${reference_fasta} -R ${reference_name} -d ${reference_date}
 ```
 
-##### inputParameters
+### inputParameters
 Because we may have multiple bam files, we use "type: file[]" to specify that "input_bam" represents a list of files instead of just a single one. I am only specifying one file for "bam_config_file" and "reference_fasta", so those are of "type: file".
 
-##### outputParameters
+### outputParameters
 In the "outputParameters" section, I have specified one file for output. Once all docker commands are complete Dockerflow will look for a file  matching this name and try to upload it the the workspace we have specified in Google Cloud Storage.
 
-##### docker:cmd
+### docker:cmd
 Here we use the pipe operator "|" to specify a list of commands that will be run serially, in our docker container. First we add the path of the Pindel executable to the environment variable "PATH" so that we can run Pindel from the command-line using only the name of the executable, "pindel". The following two commands will run "pindel" and then "pindel2vcf" to generate our output VCF file.
 
 Unfortunately, **these commands will not work.** The reason for this will be discussed in the next section.
 
-### Choosing a file management pattern for Dockerflow
-There are multiple methods you can use to handle file management in Dockerflow. The first is to use the native Dockerflow method. This is the easiest and most elegant solution; however, because of the way it tags files, it is not optimal for all cases. **Files managed by Dockerflow have an arbitrary numerical identifier appended to the beginning of all filenames when they are loaded onto the datadisk.** Further description of this behavior can be found in the second comment of this issue: https://github.com/googlegenomics/dockerflow/issues/16. 
+## Choosing a file management pattern for Dockerflow
+There are multiple methods you can use to handle file management in Dockerflow. The first is to use the native Dockerflow method. This is the easiest and most elegant solution; however, because of the way it tags files, it is not optimal for all cases. **Files managed by Dockerflow have an arbitrary numerical identifier appended to the beginning of all filenames.** Further description of this behavior can be found in the second comment of this issue: https://github.com/googlegenomics/dockerflow/issues/16. 
 
 In cases where all input and output filenames are specified through by Dockerflow variables, this should be fine because Dockerflow knows to look for filenames with these appended IDs. However, if you are not explicity specifying all input and output filenames with Dockerflow input/output parameters, you will likely run into problems. Let's look at some examples demonstrating this behavior...
 
-**Method 1: The native method for managing Dockerflow files.** 
-
+### Using the native method for managing Dockerflow files
 ```
 # Mark duplicate reads to avoid counting non-independent observations
 - defn:
@@ -388,7 +389,7 @@ However, if I pass this file as input to my Dockerflow Pindel task, it will fail
 
 To get this to work, I need to know the specific ID that will be attached to the files in order to specify the filenames in the config file. Because, I can't know this before runtime, I would have to create the config file as part of the commands I run in the Dockerflow task. This is doable, but would probably involve obtuse bash commands that I don't know, and am not interested in learning. 
 
-**Method 2: Using gsutil to manage Dockerflow files***
+### Using gsutil to manage Dockerflow files
 
 Gsutil is "a python application that let's you access Cloud Storage from the command line" (https://cloud.google.com/storage/docs/gsutil). Instead of having Dockerflow manage files for us, we can do it ourselves, using gsutil. This is a less elegant solution that does not really fit within the Dockerflow schema, but is does afford us more freedom in file handling.
 
@@ -426,7 +427,7 @@ In using gsutil, we take responsibility from Dockerflow in specifying which vari
 
 In forsaking the native Dockerflow form we gain freedom as well as variability and the opportunities for errors. Alternatively, we could take a hybrid approach by adding processing steps to chop off the IDs after they have been transferred to our datadisk. Something like this...
 
-**Method 3: A hybrid method for managing Dockerflow files**
+### Using a hybrid approach to managing Dockerflow files
 
 ```
 name: Pindel
@@ -463,13 +464,11 @@ docker:
 
 This option works and maintains some of the native processing features of Dockerflow, but it involves piped bash processing steps and at the end I am still using gsutil to copy the output file back to Cloud Storage. I don't think any of these options are particularly ideal, so its up to to decide which is most appropriate for you task.
 
-**Method 4: Your own better method!**
+### Using your own better method!
 
 Godspeed.
 
-This will be necessary for uploading files back to Google Cloud Storage. In theory dockerflow would take care of this, but the Google Pipelines API (?) adds numeric prefixes to all input/output files that makes their paths incompatible with the real file paths.
-
-####Commit Pindel docker image to GCP
+## Commit Pindel docker image to GCP
 In addition to commiting our container to an image, we'll also be uploading this image to the GCP Container Engine Registry so that we can use it with our Dockerflow tasks.
 
 ```
@@ -484,9 +483,10 @@ $ docker tag pindel:1.0 gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 $ gcloud docker push gcr.io/gbsc-gcp-project-mvp/pindel:1.0
 ```
 
-##### Create args file
+## Create args file
 The args file will store all the arguments that will be passed to our task(s). Because we are only passing inputs to the Pindel task, there is only  "inputs:" section. Each argument is specified according to the pattern: ```Task_name.argument_name: argument_value```.
 
+### Args file using hybrid approach
 In the case of ```input_bams``` and ```input_bais```, we can use the pipe operator, "|", to specify a list of values to be passed to the argument.
 
 ```
@@ -509,76 +509,39 @@ inputs:
   Pindel.output_vcf: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/bamtest.vcf
 ```
 
-#####Test Dockerflow task by running it locally
+### Args file using gsutil approach
+
 ```
-$ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel --runner=DirectPipelineRunner
+inputs:
+  Pindel.input_bams_dir: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
+  Pindel.bam_config_file: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_config.txt
+  Pindel.reference_fasta: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_reference.fa 
+  Pindel.reference_fai: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/simulated_reference.fa.fai
+  Pindel.output_prefix: bamtest
+  Pindel.name_of_chromosome: ALL
+  Pindel.reference_name: Test
+  Pindel.reference_date: 20161214
+  Pindel.output_vcf: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/${Pindel.output_prefix}.vcf
 ```
 
-#####Test Dockerflow task by running it on Google Cloud Platform
+## Test that Dockerflow is formatted correctly
 ```
-$ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
+$ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel --runner=DirectPipelineRunner --test
 ```
-## TO DO
-Add description of handling files using standard dockerflow protocol manually using gsutil
 
-####Move on to the next task
+## Test Dockerflow task by running it locally
+```
+$ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel --runner=DirectPipelineRunner
+```
 
-##UNDER CONSTRUCTION
+## Test Dockerflow task by running it on Google Cloud Platform
+```
+$ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
+```
 
-###Check if a docker container for your task already exists
+## Rinse and repeat for additional workflows tasks
+Good luck!
+
+## Bonus: Check if a docker image already exists for your task
 
 Check the BioContainers Registry UI: http://biocontainers.pro/registry/#/
-
-Install breakdancer
-```
-# wget https://sourceforge.net/projects/breakdancer/files/breakdancer-1.1.2_2013_03_08.zip/download
-# unzip download
-
-```
-
-####Install samtools (pre-req for pindel)
-```
-# cd /home
-# wget https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2
-# tar xvfj samtools-1.3.1.tar.bz2
-# cd samtools-1.3.1
-# ./configure
-# make
-# make prefix=/opt/samtools install
-# vi ~/.bashrc
-
-#####Basic vim commands:
-i       : Change to insert mode to add text to file
-ESC     : Change to command mode
-:wq     : Write changes to file and quit
-
-More information for using vim: https://coderwall.com/p/adv71w/basic-vim-commands-for-getting-started
-
-
-Add the following lines to ~/.bashrc
-```
-# Add samtools to environment variable "PATH"
-export PATH=$PATH:/opt/samtools/bin
-```
-
-# mkdir /opt/samtools/src
-# cp -r samtools-1.3.1/* /opt/samtools/src/
-# cd /opt/samtools/src/htslib-1.3.1
-# ./configure
-# make
-# make install
-
-
-
-###Download test files
-###Locally run process
-###Check syntax of inputs & outputs
-###Update task file to inputs & outputs
-###Commit docker image
-###Upload to GCP
-Test dockerflow task locally
-Test dockerflow task on GCP
-Repeat steps 1-4 for each task in workflow
-Write dockerflow workflow file
-Write args file
-
