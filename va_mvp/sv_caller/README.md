@@ -524,17 +524,17 @@ inputs:
   Pindel.output_vcf: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel/${Pindel.output_prefix}.vcf
 ```
 
-## Test that Dockerflow is formatted correctly
+## Run Dockerflow in test mode to confirm it is formatted correctly
 ```
 $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel --runner=DirectPipelineRunner --test
 ```
 
-## Test Dockerflow task by running it locally
+## Run Dockerflow locally with test files
 ```
 $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel --runner=DirectPipelineRunner
 ```
 
-## Test Dockerflow task by running it on Google Cloud Platform
+## Run Dockerflow on on Google Cloud Platform with test files
 ```
 $ dockerflow --project=gbsc-gcp-project-mvp --workflow-file=sv-caller-workflow.yaml --args-file=sv-caller-args-hybrid.yaml --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
 ```
