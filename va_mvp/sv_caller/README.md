@@ -35,7 +35,7 @@ Instructions for installing Dockerflow can be found on the main page of the repo
 
 ## <a name="base-workflow"></a>Write base workflow file
 
-Now that we know the tasks involved in our workflow and the structure of the workflow, we can draft a workflow document. This will serve as an outline as we build our Dockerflow.
+We will begin by drafting our workflow document 'sv-caller-workflow.yaml'. We can add a name and workflow description to the definition section and also fill in the steps involved in our workflow. We can also fill in the names of the task definition files we are going to make for each task. The workflow file will be used as an outline as we build the rest of our Dockerflow.
 
 ```
 version: v1alpha2
@@ -66,7 +66,54 @@ defn:
   name: SV_Caller
   description: Use multiple bioinformatics tools to call genomics structural variants.
 
-graph:
+steps: 
+- defn:
+    name: Pindel
+  defnFile: pindel-task.yaml
+#- defn:
+#    name: Breakdancer
+#  defnFile: breakdancer-task.yaml
+#- defn:
+#   name: CNVnator
+#  defnFile: cnvnator-task.yaml
+#- defn:
+#    name: BreakSeq
+#  defnFile: breakseq-task.yaml
+```
+
+## <a name="design-workflow"></a>Design workflow tasks structure
+Dockerflow allows us to control the orientation in which tasks are performed using branching patterns. The branching pattern will be added as a section to the workflow file. Three patterns are discussed here.
+
+**Pattern 1**: If you want to run all tasks serially, you do not need to describe any branching pattern and can leave the branching section out of your workflow file.
+
+**Pattern 2**: Run all tasks in parallel
+```
+- BRANCH:
+  - Pindel
+  - Breakdancer
+  - CNVnator
+  - BreakSeq
+```
+
+**Pattern 3**: Run multiple tasks serially in one branch, while running another task in parallel on a different branch
+
+```
+- BRANCH:
+  - Pindel
+  -- Breakdancer
+   - CNVnator
+   - BreakSeq
+```
+In this case, Breakdancer and Pindel will start running at the same time. However, CNVnator will wait for Breakdancer to finish, before running, and BreakSeq will run after it. This would be useful if CNVnator relied on output from Breakdancer and BreakSeq relied on output from Breakdancer & CNVnator.
+
+We will use pattern 2 to run all tasks in parallel, since none of our tasks rely on output from others. So our workflow file now looks like this:
+
+```
+version: v1alpha2
+defn:
+  name: SV_Caller
+  description: Use multiple bioinformatics tools to call genomics structural variants.
+
 - BRANCH:
   - Pindel
 #  - Breakdancer
@@ -86,34 +133,9 @@ steps:
 #- defn:
 #    name: BreakSeq
 #  defnFile: breakseq-task.yaml
-args:
-  inputs:
 ```
 
-## <a name="design-workflow"></a>Design workflow tasks structure
-
-**Pattern 1**: If you want to run all tasks serially, you do not need to describe any branching pattern and can leave the branching section out of your workflow file.
-
-**Pattern 2**: Run all tasks in parallel
-```
-- BRANCH:
-  - Breakdancer
-  - CNVnator
-  - BreakSeq
-  - Pindel
-```
-
-**Pattern 3**: Can run multiple tasks serially in one branch, while running another task in parallel on a different branch
-
-```
-- BRANCH:
-  -- Breakdancer
-   - CNVnator
-   - BreakSeq
-  - Pindel
-```
-
-We will use pattern 2 to run all tasks in parallel, since none of our tasks rely on output from other tasks.
+Like with the workflow steps, I have commented out only the branch we will be implementing first so that we can perform test runs of the workflow as tasks are implemented.
 
 ## <a name="base-task"></a>Write base Dockerflow task file
 
@@ -132,7 +154,7 @@ docker:
 
 This is the current draft of 'pindel-task.yaml', the Pindel task file. The task file describes everything involved in executing the Pindel task. This includes inputs, outputs, and the commands that will be run in the Pindel docker image. Currently it only has values for the name, description, and docker:imageName.  As we figure out more about running Pindel, we can fill in these values.
 
-The docker image is named gcr.io/your_project_name/task_name. We haven't created the docker image yet, but I already have enough information to infer what it will be named. Once I know more about how breakdancer works, I can fill in the sections for input/output parameters and the command to be run in docker.
+The docker image is named gcr.io/your_project_name/task_name. We haven't created the docker image yet, but already have enough information to infer what it will be named. Once we know more about running Pindel, we can fill in the sections for input/output parameters and the command to be run in docker.
 
 ## <a name="build-docker"></a>Build the Docker image
 Docker images are the engines that perform all the operations in Dockerflow. Each task in our dockerflow will be associated with a docker image and each image can be customized with executables and scripts specially designed to carry out that task.
@@ -163,11 +185,12 @@ If this runs successfully your command prompt should now look something like thi
 root@589558b93b5a:/#
 ``` 
 Congratulations, you are now working inside a Docker container!
+In further code snippets, we will use '#' to signify docker commands and '$' for standard console commands.
 
 ### Structuring Docker images
-When building a Docker image, we want to keep it install the minimum number of tools required to perform the specific task we are working on. This will allow us to keep each Docker image small and avoid any compatibility issues between different softwares and dependencies.
+When building a Docker image, we want to install the minimum number of tools required to perform the task we are working on. This will allow us to keep each Docker image small and avoid compatibility issues between different softwares and dependencies.
 
-Since we want to run four different tools, we will likely be using four different Docker images; each one specifically configured for each task. However, there are common utilities that we will likely use in all our Docker images. Because of this, we are going to first create a Docker image with some common utilities, and then use that as the base to make each of our other task-specific images.
+Since we want to run four different tools, we will likely be using four different Docker images; each one specifically configured to each task. However, there are common utilities that we will likely use in all our Docker images. Because of this, we are going to first create a Docker image with some common utilities, and then use that as the base to make each of our other task-specific images.
 
 ### Add tools to the Docker container
 
@@ -175,7 +198,7 @@ The 'ubuntu' image we are using has only the bare bones of the Ubuntu OS. In ord
 
 We can try inferring which utilities we'll need by looking at the download & install instructions for each of the tools we intend to use. We probably won't be able to infer all of them, especially for software that has to be compiled from source. That's fine; when we run into these we'll just have to decide whether it's appropriate to go back and add those resources to our base ubuntu image or install them on an image-by-image basis for each task. 
 
-From previous experience and by looking at the dependencies for our software packages, I'm going to install the following utlities and libraries.
+Based on previous experience, and by looking at the dependencies for our software packages, let's install the following utlities and libraries.
 
 Install general utilities
 ```
@@ -262,7 +285,7 @@ We've verified that Pindel has been successfully installed in our Docker contain
 # gsutil cp simulated_* gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/pindel
 ```
 ## <a name="update-task"></a>Update task file 
-With Pindel installed in our container, we can start filling in the Pindel task file. First, we need to figure out how to run Pindel. The Pindel authors have conveniently provided a RUNME script that will give us an idea of common use-cases and arguments. We can also read the documentation. And now let's add those to the Pindel task file.
+With Pindel installed in our container, we can start filling in the Pindel task file. First, we need to figure out how to run Pindel. The Pindel authors have conveniently provided a RUNME script that will give us an idea of common use-cases and arguments. We can also read the documentation. Now let's add those to the Pindel task file.
 
 ```
 name: Pindel
