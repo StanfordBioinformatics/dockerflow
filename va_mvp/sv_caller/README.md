@@ -5,7 +5,17 @@ Dockerflow is not an official Google product. This is not an official guide. I a
 
 ## Overview
 
-## Dictionary
+## Outline
+- [Dictionary](#dictionary)
+- Install Dockerflow
+- Design structure of workflow tasks
+- Write base Dockerflow workflow file
+- Write base Dockerflow task file
+- Build the Docker image
+- Upload test files to Cloud Storage
+- 
+
+##<a name="dictionary"></a>Dictionary
 - Task
 - Workflow
 - YAML
@@ -15,7 +25,7 @@ Dockerflow is not an official Google product. This is not an official guide. I a
 ## Install Dockerflow
 Instructions for installing Dockerflow can be found on the main page of the repo: https://github.com/googlegenomics/dockerflow
 
-## Design structure of tasks in workflow
+## Design structure of workflow tasks
 
 **Pattern 1**: If you want to run all task serially, you do not need to describe any branching pattern and can leave the branching section out of your workflow file.
 
