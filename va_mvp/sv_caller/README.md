@@ -9,18 +9,18 @@ This guide is designed to demonstrate effective practices for building Dockerflo
 ## Outline
 - [Dictionary](#dictionary)
 - [Install Dockerflow](#install-dockerflow)
-- [Design workflow tasks structure](#design-workflow)
-- [Write base Dockerflow workflow file](#base-workflow)
-- [Write base Dockerflow task file](#base-task)
-- [Build the Docker image](#build-docker)
+- [Write basic workflow file](#base-workflow)
+- [Add task structure](#design-workflow)
+- [Write basic task file](#base-task)
+- [Build Docker image for task](#build-docker)
 - [Upload test files to Cloud Storage](#upload-test-files)
 - [Update task file](#update-task)
 - [Choose a file management pattern](#file-management)
-- [Commit docker image to GCP](#commit-docker)
+- [Commit Docker image to GCP](#commit-docker)
 - [Create args file](#create-args")
-- [Run Dockerflow in test mode](#run-test)
-- [Run Dockerflow locally with test files](#run-locally)
-- [Run Dockerflow on GCP with test files](#run-gcp)
+- [Perform workflow dry-run](#run-test)
+- [Test workflow locally](#run-locally)
+- [Test workflow on GCP](#run-gcp)
 - [Rinse & repeat](#repeat)
 - [Bonus: Check if docker image already exists for task](#biocontainers)
 
@@ -33,32 +33,6 @@ This guide is designed to demonstrate effective practices for building Dockerflo
 ## <a name="install-dockerflow"></a>Install Dockerflow
 Instructions for installing Dockerflow can be found on the main page of the repo: https://github.com/googlegenomics/dockerflow
 
-## <a name="design-workflow"></a>Design workflow tasks structure
-
-**Pattern 1**: If you want to run all task serially, you do not need to describe any branching pattern and can leave the branching section out of your workflow file.
-
-**Pattern 2**: Run all tasks in parallel
-```
-- BRANCH:
-  - Breakdancer
-  - CNVnator
-  - BreakSeq
-  - Pindel
-```
-
-**Pattern 3**: Can run multiple tasks serially in one branch, while running another task in parallel on a different branch
-
-```
-- BRANCH:
-  -- Breakdancer
-   - CNVnator
-   - BreakSeq
-  - Pindel
-```
-
-We will use pattern 2 to run all tasks in parallel, since none of our tasks rely on output from other tasks.
-
-
 ## <a name="base-workflow"></a>Write base workflow file
 
 Now that we know the tasks involved in our workflow and the structure of the workflow, we can draft a workflow document. This will serve as an outline as we build our Dockerflow.
@@ -68,13 +42,6 @@ version: v1alpha2
 defn:
   name: SV_Caller
   description: Use multiple bioinformatics tools to call genomics structural variants.
-
-graph:
-- BRANCH:
-  - Pindel
-  - Breakdancer
-  - CNVnator
-  - BreakSeq
 
 steps: 
 - defn:
@@ -89,8 +56,6 @@ steps:
 - defn:
     name: BreakSeq
   defnFile: breakseq-task.yaml
-args:
-  inputs:
 ```
 
 The first task I am going to add is Pindel, so for now I will comment out all the other branches and task definitions.
@@ -124,6 +89,31 @@ steps:
 args:
   inputs:
 ```
+
+## <a name="design-workflow"></a>Design workflow tasks structure
+
+**Pattern 1**: If you want to run all tasks serially, you do not need to describe any branching pattern and can leave the branching section out of your workflow file.
+
+**Pattern 2**: Run all tasks in parallel
+```
+- BRANCH:
+  - Breakdancer
+  - CNVnator
+  - BreakSeq
+  - Pindel
+```
+
+**Pattern 3**: Can run multiple tasks serially in one branch, while running another task in parallel on a different branch
+
+```
+- BRANCH:
+  -- Breakdancer
+   - CNVnator
+   - BreakSeq
+  - Pindel
+```
+
+We will use pattern 2 to run all tasks in parallel, since none of our tasks rely on output from other tasks.
 
 ## <a name="base-task"></a>Write base Dockerflow task file
 
