@@ -1,0 +1,33 @@
+version: v1alpha2
+defn:
+  name: BamQC
+  description: Run FastQC to check bam qualities and then generate summary report.
+
+graph:
+- BRANCH:
+  - SamtoolsFlagstat
+  - Fastqc
+#- GenerateFastqcSummary
+
+steps: 
+- defn:
+    name: SamtoolsFlagstat
+  defnFile: samtools-flagstat-task.yaml
+  scatterBy: input_bam
+- defn:
+    name: Fastqc
+  defnFile: fastqc-task.yaml
+  scatterBy: input_bam
+#- defn: 
+#    name: Unzip
+#  defnFile: unzip-task.yaml
+#- defn:
+#    name: GenerateFastqcSummary
+#  defnFile: generate-fastqc-summary-task.yaml
+
+args:
+  inputs:
+    SamtoolsFlagstat.input_bam: "${input_bam}"
+    Fastqc.input_bam: "${input_bam}"
+
+    #SamToFastqAndBwaMem.output_bam_basename: "${= '${input_bam}'.replace(/gs:.*\\//, '').replace(/.bam/, '.unmerged'); }"
