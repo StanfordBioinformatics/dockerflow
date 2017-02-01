@@ -21,7 +21,7 @@ outputParameters:
   type: file
 
 docker:
-  imageName: 'gcr.io/gbsc-gcp-project-mvp/r-python:1.1'
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/plot_flagstat:1.0'
   cmd: |
     echo ${qc_reads_plot}
     arbitrary_id="$( cut -d '-' -f 1 <<< "${qc_reads_plot##*/}" )"
