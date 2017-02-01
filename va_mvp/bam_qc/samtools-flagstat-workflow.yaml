@@ -1,7 +1,8 @@
 version: v1alpha2
 defn:
   name: BamQC
-  description: Run FastQC to check bam qualities and then generate summary report.
+  description: '''Run Samtools Flagstat on a list of bam files, 
+                concatenate resulting text files, and generate summary plots'''
 
 graph:
 - RunFlagstat
@@ -23,6 +24,9 @@ steps:
 
 args:
   inputs:
-    SamtoolsFlagstat.sample_name: "${= '${SamtoolsFlagstat.input_bam}'.split('/').slice(5,6).toString(); }"
-    ConcatenateFiles.input_files: "${SamtoolsFlagstat.flagstat_file}"
+    # From command-line
+    # --inputs-fron-file=RunFlagstat.input_bam=<input_file>
+    # --inputs=PlotFlagstat.series=<arbitrary_name>
+    RunFlagstat.sample_name: "${= '${RunFlagstat.input_bam}'.split('/').slice(5,6).toString(); }"
+    ConcatenateFiles.input_files: "${RunFlagstat.flagstat_file}"
     PlotFlagstat.flagstat_file: "${ConcatenateFiles.concat_file}"
