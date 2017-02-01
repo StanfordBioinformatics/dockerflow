@@ -1,4 +1,4 @@
-## BAM-QC Dockerflow - Under Construction
+## BAM-QC Dockerflow - *Under Construction*
 
 Dockerflow to perform preliminary QC checks on bam files provided by Bina as part of the VA MVP project.
 
