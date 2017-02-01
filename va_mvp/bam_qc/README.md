@@ -2,7 +2,7 @@
 
 Dockerflow to perform preliminary QC checks on bam files provided by Bina as part of the VA MVP project.
 
-### Dockerflow Files:
+### Files:
 
 - bam-qc-workflow.yaml: Workflow file describing all steps involved in bam-qc process.
 
@@ -16,7 +16,7 @@ Dockerflow to perform preliminary QC checks on bam files provided by Bina as par
 
 Dockerflow for running Samtools Flagstat on a list of bam files, concatenating the outputs, and generating summary R plots.
 
-### Dockerflow files:
+### Files:
 
 - samtools-flagstat-workflow.yaml: Workflow file.
 
