@@ -1,0 +1,22 @@
+name: ConcatenateFiles
+description: Concatenate files adding header line with filename
+
+inputParameters:
+- name: input_files
+  type: file[]
+  inputBinding:
+    itemSeparator: ","
+
+outputParameters:
+- name: concat_file
+  defaultValue: concat_file.txt
+  type: file
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/samtools'
+  cmd: |
+    IFS=',' read -ra FILES <<< ${input_files}
+    for file in "${FILES[@]}"; do
+        echo "# ${file}" >> "${concat_file}";
+        cat "${file}" >> "${concat_file}";
+    done

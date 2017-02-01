@@ -1,0 +1,28 @@
+version: v1alpha2
+defn:
+  name: BamQC
+  description: Run FastQC to check bam qualities and then generate summary report.
+
+graph:
+- RunFlagstat
+- ConcatenateFiles
+- PlotFlagstat
+
+steps: 
+- defn:
+    name: RunFlagstat
+  defnFile: run-flagstat-task.yaml
+  scatterBy: input_bam
+  gatherBy: pipeline_run
+- defn:
+    name: ConcatenateFiles
+  defnFile: concatenate-files-task.yaml
+- defn:
+    name: PlotFlagstat
+  defnFile: plot-flagstat-task.yaml
+
+args:
+  inputs:
+    SamtoolsFlagstat.sample_name: "${= '${SamtoolsFlagstat.input_bam}'.split('/').slice(5,6).toString(); }"
+    ConcatenateFiles.input_files: "${SamtoolsFlagstat.flagstat_file}"
+    PlotFlagstat.flagstat_file: "${ConcatenateFiles.concat_file}"
