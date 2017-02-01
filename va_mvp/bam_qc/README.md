@@ -27,7 +27,7 @@ Dockerflow for running Samtools Flagstat on a list of bam files, concatenating t
 - plot-flagstat-task.yaml: Task file; use python script to parse output into R-readable table format. Use R script to generate plots.
 
 ### Usage:
-Create Docker image
+Create Docker image:
 ```
 cd plot_flagstat_docker
 docker build -t plot_flagstat:1.0 .
