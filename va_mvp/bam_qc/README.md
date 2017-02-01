@@ -1,8 +1,8 @@
-##BAM-QC Dockerflow - Under Construction
+## BAM-QC Dockerflow - Under Construction
 
 Dockerflow to perform preliminary QC checks on bam files provided by Bina as part of the VA MVP project.
 
-###Files:
+### Dockerflow Files:
 
 - bam-qc-workflow.yaml: Workflow file describing all steps involved in bam-qc process.
 
@@ -12,11 +12,11 @@ Dockerflow to perform preliminary QC checks on bam files provided by Bina as par
 
 - samtools-flagstat-task.yaml: Task file to run Samtools Flagstat on bam file. 
 
-##Samtools Flagstat Dockerflow - Ready
+## Samtools Flagstat Dockerflow - Ready
 
 Dockerflow for running Samtools Flagstat on a list of bam files, concatenating the outputs, and generating summary R plots.
 
-###Files:
+### Dockerflow files:
 
 - samtools-flagstat-workflow.yaml: Workflow file.
 
@@ -26,7 +26,14 @@ Dockerflow for running Samtools Flagstat on a list of bam files, concatenating t
 
 - plot-flagstat-task.yaml: Task file; use python script to parse output into R-readable table format. Use R script to generate plots.
 
-###Usage:
+### Docker image:
+#### Files:
+- scripts/parse_flagstat_concat.py: Script used to transform native samtools flagstat output into R-readable table format.
+
+- scripts/plot_flagstat_concat.R: Script used to read in output from parse_flagstat_concat.py and generate summary boxplots.
+####
+
+### Usage:
 Test inputs:
 ```
 dockerflow \
