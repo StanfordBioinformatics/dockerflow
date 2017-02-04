@@ -1,0 +1,29 @@
+version: v1alpha2
+defn:
+  name: FastQC
+  description: '''
+                  Run FastQC on a list of bam files
+               '''
+
+graph:
+- RunFastQC
+- ConcatenateFiles
+
+steps: 
+- defn:
+    name: RunFastQC
+  defnFile: run-fastqc-task.yaml
+  scatterBy: input_bam
+  gatherBy: pipeline_run
+- defn:
+    name: ConcatenateFiles
+  defnFile: concatenate-files-task.yaml
+
+args:
+  inputs:
+    # From command-line
+    # --inputs-fron-file=RunFlagstat.input_bam=<input_file>
+    # --inputs=PlotFlagstat.series=<arbitrary_name>
+    RunFastQC.basename: "${= '${RunFastQC.input_bam}'.replace(/gs:.*\\//, '').replace(/.bam/, ''); }"
+    RunFastQC.sample_name: "${= '${RunFastQC.input_bam}'.split('/').slice(5,6).toString(); }"
+    ConcatenateFiles.input_files: "${RunFastQC.fastqc_data}"
