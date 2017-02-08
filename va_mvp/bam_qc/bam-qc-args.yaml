@@ -1,2 +1,0 @@
-inputs:
-  input_bam: gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/bam_qc/SCGPM_160817_SReq-992_C8MWJ_noBarcode.bam

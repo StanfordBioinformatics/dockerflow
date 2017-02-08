@@ -1,33 +1,64 @@
 version: v1alpha2
 defn:
   name: BamQC
-  description: Run FastQC to check bam qualities and then generate summary report.
+  description: Run FastQC and Samtools flagstat on list of bam files and generate summary figures.
+
+#graph:
+#- BRANCH:
+  #- Sha1Check
+#  -- SamtoolsFlagstat
+#   - SummarizeFlagstat
+  #-- Fastqc
+  # - SummarizeFastqc
+#- GenerateSummary
 
 graph:
 - BRANCH:
-  - SamtoolsFlagstat
-  - Fastqc
-#- GenerateFastqcSummary
+  - - RunFlagstat
+    - ConcatenateFlagstatFiles
+    - PlotFlagstat
+  - - RunFastQC
+    - ConcatenateFastqcFiles
+    - PlotFastQC
 
 steps: 
 - defn:
-    name: SamtoolsFlagstat
-  defnFile: samtools-flagstat-task.yaml
+    name: RunFlagstat
+  defnFile: run-flagstat-task.yaml
   scatterBy: input_bam
+  gatherBy: pipeline_run
 - defn:
-    name: Fastqc
-  defnFile: fastqc-task.yaml
+    name: ConcatenateFlagstatFiles
+  defnFile: concatenate-files-task.yaml
+- defn:
+    name: PlotFlagstat
+  defnFile: plot-flagstat-task.yaml
+- defn:
+    name: RunFastQC
+  defnFile: run-fastqc-task.yaml
   scatterBy: input_bam
-#- defn: 
-#    name: Unzip
-#  defnFile: unzip-task.yaml
-#- defn:
-#    name: GenerateFastqcSummary
-#  defnFile: generate-fastqc-summary-task.yaml
+  gatherBy: pipeline_run
+- defn:
+    name: ConcatenateFastqcFiles
+  defnFile: concatenate-files-task.yaml
+- defn:
+    name: PlotFastQC
+  defnFile: plot-fastqc-task.yaml
 
 args:
   inputs:
-    SamtoolsFlagstat.input_bam: "${input_bam}"
-    Fastqc.input_bam: "${input_bam}"
-
-    #SamToFastqAndBwaMem.output_bam_basename: "${= '${input_bam}'.replace(/gs:.*\\//, '').replace(/.bam/, '.unmerged'); }"
+    # From command-line
+    # --inputs-fron-file=input_bams=<input_file>
+    # --inputs=series=<arbitrary_name>
+    # Samtools branch
+    RunFlagstat.input_bam: "${input_bams}"
+    RunFlagstat.sample_name: "${= '${RunFlagstat.input_bam}'.split('/').slice(5,6).toString(); }"
+    ConcatenateFlagstatFiles.input_files: "${RunFlagstat.flagstat_file}"
+    PlotFlagstat.flagstat_file: "${ConcatenateFlagstatFiles.concat_file}"
+    PlotFlagstat.series: "${series}"
+    # FastQC Branch
+    RunFastQC.input_bam: "${input_bams}"
+    RunFastQC.basename: "${= '${RunFastQC.input_bam}'.replace(/gs:.*\\//, '').replace(/.bam/, ''); }"
+    ConcatenateFastqcFiles.input_files: "${RunFastQC.fastqc_data}"
+    PlotFastQC.fastqc_file: "${ConcatenateFastqcFiles.concat_file}"
+    PlotFastQC.series: "${series}"

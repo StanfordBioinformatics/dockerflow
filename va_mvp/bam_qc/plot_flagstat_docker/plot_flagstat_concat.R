@@ -57,7 +57,7 @@ main <- function() {
   # method. I have to specify an output file to the script in order to get
   # the run-specific ID specified at runtime. This extracts the prefix
   # from an output file of format run_id-prefix.plot_type.file_extension.
-  out_elements = strsplit(example_out, '.', fixed=True)
+  out_elements = strsplit(example_out, '.', fixed=TRUE)
   out = out_elements[[1]][1]
   
   print(file)
