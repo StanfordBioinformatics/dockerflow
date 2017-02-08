@@ -18,13 +18,13 @@ Dockerflow for running Samtools Flagstat on a list of bam files, concatenating t
 
 ### Files:
 
-- samtools-flagstat-workflow.yaml: Workflow file.
+- **samtools-flagstat-workflow.yaml**: Workflow file.
 
-- run-flagstat-task.yaml: Task file; run Samtools Flagstat.
+- **run-flagstat-task.yaml**: Task file; run Samtools Flagstat.
 
-- concatenate-files-task.yaml: Task file; concatenate flagstat output files.
+- **concatenate-files-task.yaml**: Task file; concatenate flagstat output files.
 
-- plot-flagstat-task.yaml: Task file; use python script to parse output into R-readable table format. Use R script to generate plots.
+- **plot-flagstat-task.yaml**: Task file; use python script to parse output into R-readable table format. Use R script to generate plots.
 
 ### Usage:
 Create Docker image:
@@ -53,6 +53,35 @@ dockerflow \
 --project=gbsc-gcp-project-mvp \
 --workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/bam_qc/PlotFlagstat \
 --workflow-file=samtools-flagstat-workflow.yaml \
---inputs-fron-file=RunFlagstat.input_bam=test_inputs/phase2_bams.txt \
+--inputs-from-file=RunFlagstat.input_bam=test_inputs/phase2_bams.txt \
 --inputs=PlotFlagstat.series=Bina_170201
+```
+
+## FastQC Dockerflow - Ready
+
+### Files:
+
+- **fastqc-workflow.yaml**: Workflow file.
+
+- **run-fastqc-task.yaml**: Run FastQC on a bam file and output fastqc.zip, fastqc.html, and fastqc_data.txt files.
+
+- **concatenate-files-task.yaml**: Concatenate all fastqc_data.txt files.
+
+- **plot-fastqc-task.yaml**: Use Python script to convert concatenated fastqc_data file into table format. Use R script to generate boxplots describing mean base quality, mean sequence quality, and average GC content. Scripts are in plot_fastqc_docker/.
+
+### Usage:
+Create Docker image:  
+See Flagstat section.
+
+Test inputs:  
+See Flagstat section.
+
+Run:
+```
+dockerflow \
+--project=your-project-name \
+--workspace=gs://your-bucket-name/path/to/arbitrary/workspace \
+--workflow-file=fastqc-workflow.yaml \
+--inputs-from-file=RunFastQC.input_bam=file_with_list_of_gs_bam_file_links.txt \
+--inputs=PlotFastQC.series=arbitrary_name
 ```
