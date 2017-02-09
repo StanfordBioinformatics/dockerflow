@@ -3,15 +3,6 @@ defn:
   name: BamQC
   description: Run FastQC and Samtools flagstat on list of bam files and generate summary figures.
 
-#graph:
-#- BRANCH:
-  #- Sha1Check
-#  -- SamtoolsFlagstat
-#   - SummarizeFlagstat
-  #-- Fastqc
-  # - SummarizeFastqc
-#- GenerateSummary
-
 graph:
 - BRANCH:
   - - RunFlagstat
@@ -47,16 +38,16 @@ steps:
 
 args:
   inputs:
-    # From command-line
+    ## From command-line
     # --inputs-fron-file=input_bams=<input_file>
     # --inputs=series=<arbitrary_name>
-    # Samtools branch
+    ## Samtools branch
     RunFlagstat.input_bam: "${input_bams}"
     RunFlagstat.sample_name: "${= '${RunFlagstat.input_bam}'.split('/').slice(5,6).toString(); }"
     ConcatenateFlagstatFiles.input_files: "${RunFlagstat.flagstat_file}"
     PlotFlagstat.flagstat_file: "${ConcatenateFlagstatFiles.concat_file}"
     PlotFlagstat.series: "${series}"
-    # FastQC Branch
+    ## FastQC Branch
     RunFastQC.input_bam: "${input_bams}"
     RunFastQC.basename: "${= '${RunFastQC.input_bam}'.replace(/gs:.*\\//, '').replace(/.bam/, ''); }"
     ConcatenateFastqcFiles.input_files: "${RunFastQC.fastqc_data}"
