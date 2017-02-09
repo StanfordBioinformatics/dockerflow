@@ -27,6 +27,5 @@ args:
     # --inputs-fron-file=RunFastQC.input_bam=<input_file>
     # --inputs=PlotFastQC.series=<arbitrary_name>
     RunFastQC.basename: "${= '${RunFastQC.input_bam}'.replace(/gs:.*\\//, '').replace(/.bam/, ''); }"
-    RunFastQC.sample_name: "${= '${RunFastQC.input_bam}'.split('/').slice(5,6).toString(); }"
     ConcatenateFiles.input_files: "${RunFastQC.fastqc_data}"
     PlotFastQC.fastqc_file: "${ConcatenateFiles.concat_file}"

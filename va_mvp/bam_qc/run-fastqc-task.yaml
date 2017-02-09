@@ -3,7 +3,9 @@ description: Run samtools index on a bam file
 
 inputParameters:
 - name: input_bam
-  type: file
+  localCopy:
+    disk: data
+    path: "input.bam"
 - name: basename
 - name: pipeline_run
   defaultValue: "${workflow.index}"
@@ -11,27 +13,29 @@ inputParameters:
 outputParameters:
 - name: fastqc_zip
   defaultValue: "${basename}_fastqc.zip"
-  type: file
+  localCopy:
+    disk: data
+    path: "input_fastqc.zip"
 - name: fastqc_html
   defaultValue: "${basename}_fastqc.html"
-  type: file
+  localCopy:
+    disk: data
+    path: "input_fastqc.html"
 - name: fastqc_data
   defaultValue: "${basename}_fastqc_data.txt"
-  type: file
+  localCopy:
+    disk: data
+    path: "input_fastqc/fastqc_data.txt"
+
+resources:
+  disks:
+  - name: data
+    type: PERSISTENT_HDD
+    sizeGb: 500
+    mountPoint: /mnt/data
 
 docker:
   imageName: 'gcr.io/gbsc-gcp-project-mvp/fastqc:1.01'
   cmd: |    
-    echo ${input_bam}
-    echo ${fastqc_zip}
-    arbitrary_id_in="$( cut -d '-' -f 1 <<< "${input_bam##*/}" )"
-    arbitrary_id_out="$( cut -d '-' -f 1 <<< "${fastqc_zip##*/}" )"
-    echo ${arbitrary_id}
-    echo "Running FastQC"
     fastqc ${input_bam}
-    echo "Unzipping fastQC archive"
-    unzip -d /mnt/data /mnt/data/${arbitrary_id_in}-${basename}_fastqc.zip
-    echo "Renaming fastqc files to have output ID"
-    cp /mnt/data/${arbitrary_id_in}-${basename}_fastqc/fastqc_data.txt /mnt/data/${arbitrary_id_out}-${basename}_fastqc_data.txt
-    mv /mnt/data/${arbitrary_id_in}-${basename}_fastqc.html /mnt/data/${arbitrary_id_out}-${basename}_fastqc.html
-    mv /mnt/data/${arbitrary_id_in}-${basename}_fastqc.zip /mnt/data/${arbitrary_id_out}-${basename}_fastqc.zip
+    unzip -d /mnt/data /mnt/data/input_fastqc.zip
