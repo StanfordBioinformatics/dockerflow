@@ -1,0 +1,28 @@
+name: DecryptPGP
+description: Decrypt and untar PGP genome data from Bina
+
+inputParameters:
+- name: tarFile
+- name: passphrase
+  localCopy:
+    disk: datadisk
+    path: "input/passphrase.txt"
+- name: ascPair
+  localCopy:
+    disk: datadisk
+    path: "input/pair.asc"
+- name: outputPath
+
+resources:
+  minimumRamGb: 16
+  disks:
+  - name: datadisk
+    type: PERSISTENT_HDD
+    sizeGb: 800
+    mountPoint: /mnt/data
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/gs_decrypt_dflow'
+  cmd: |
+    mkdir -p /mnt/data/output 
+    decrypt_dflow_batch.sh ${tarFile} ${passphrase} ${ascPair} ${outputPath}

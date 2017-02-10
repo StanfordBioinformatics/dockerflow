@@ -1,0 +1,9 @@
+version: v1alpha2
+defn:
+  name: DecryptBinaGenomes
+  description: Decrypt and extract PGP genome tar files from Bina.
+steps: 
+- defn:
+    name: Decrypt
+  defnFile: task-decrypt.yaml
+  scatterBy: tarFile
