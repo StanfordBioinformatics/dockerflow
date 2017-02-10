@@ -31,18 +31,18 @@ Create Docker image:
 ```
 cd plot_flagstat_docker
 docker build -t plot_flagstat:1.0 .
-docker tag plot_flagstat:1.0 gcr.io/gbsc-gcp-project-mvp/plot_flagstat:1.0
-gcloud docker push gcr.io/gbsc-gcp-project-mvp/plot_flagstat:1.0
+docker tag plot_flagstat:1.0 gcr.io/your-project/plot_flagstat:1.0
+gcloud docker push gcr.io/your-project/plot_flagstat:1.0
 ```
 
 Test inputs:
 ```
 dockerflow \
 --project=gbsc-gcp-project-mvp \
---workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/bam_qc/PlotFlagstat \
+--workspace=gs://your-bucket/path/to/workspace/Flagstat \
 --workflow-file=samtools-flagstat-workflow.yaml \
---inputs-fron-file=RunFlagstat.input_bam=test_inputs/phase2_bams.txt \
---inputs=PlotFlagstat.series=Bina_170201 \
+--inputs-fron-file=RunFlagstat.input_bam=list_of_bam_file_gs_links.txt \
+--inputs=PlotFlagstat.series=arbitrary-name \
 --test \
 --runner=DirectPipelineRunner
 ```
@@ -50,11 +50,11 @@ dockerflow \
 Run:
 ```
 dockerflow \
---project=gbsc-gcp-project-mvp \
---workspace=gs://gbsc-gcp-project-mvp-group/test/dockerflow_test/bam_qc/PlotFlagstat \
+--project=your-project \
+--workspace=gs://your-bucket/path/to/workspace/PlotFlagstat \
 --workflow-file=samtools-flagstat-workflow.yaml \
---inputs-from-file=RunFlagstat.input_bam=test_inputs/phase2_bams.txt \
---inputs=PlotFlagstat.series=Bina_170201
+--inputs-from-file=RunFlagstat.input_bam=list_of_bam_file_gs_links.txt \
+--inputs=PlotFlagstat.series=arbitrary-name
 ```
 
 ## FastQC Dockerflow - Ready
@@ -82,6 +82,6 @@ dockerflow \
 --project=your-project-name \
 --workspace=gs://your-bucket-name/path/to/arbitrary/workspace \
 --workflow-file=fastqc-workflow.yaml \
---inputs-from-file=RunFastQC.input_bam=file_with_list_of_gs_bam_file_links.txt \
+--inputs-from-file=RunFastQC.input_bam=list_of_bam_file_gs_links.txt \
 --inputs=PlotFastQC.series=arbitrary_name
 ```
