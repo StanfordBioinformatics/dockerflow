@@ -1,16 +1,43 @@
-## BAM-QC Dockerflow - *Under Construction*
+## BAM-QC Dockerflow - Ready
 
 Dockerflow to perform preliminary QC checks on bam files provided by Bina as part of the VA MVP project.
 
-### Files:
+### Dockerflow Files:
 
-- bam-qc-workflow.yaml: Workflow file describing all steps involved in bam-qc process.
+- bam-qc-workflow.yaml: Run FastQC and Samtools Flagstat on a set of bam files and generate summary plots.
 
-- bam-qc-args.yaml: File containing arguments passed to bam-qc workflow.
+- fastqc-task.yaml: Run FastQC on a bam file.
 
-- fastqc-task.yaml: Task file to run FastQC on bam file.
+- plot-fastqc-task.yaml: Generate summary R plots from FastQC data.
 
-- samtools-flagstat-task.yaml: Task file to run Samtools Flagstat on bam file. 
+- run-flagstat-task.yaml: Run Samtools Flagstat on bam file. 
+
+- plot-flagstat-task.yaml: Generate summary R plots from Flagstat data.
+
+- concatenate-files-task.yaml: Concatenate a list of files.
+
+### Usage:
+Test inputs:
+```
+dockerflow \
+--project=your-project \
+--workspace=gs://your-bucket/path/to/workspace/BamQC \
+--workflow-file=bam-qc-workflow.yaml \
+--inputs-from-file=input_bams=list_of_bam_file_gs_links.txt \
+--inputs=series=arbitrary-name
+--test
+--runner=DirectPipelineRunner
+```
+
+Run:
+```
+dockerflow \
+--project=your-project \
+--workspace=gs://your-bucket/path/to/workspace/BamQC \
+--workflow-file=bam-qc-workflow.yaml \
+--inputs-from-file=input_bams=list_of_bam_file_gs_links.txt \
+--inputs=series=arbitrary-name
+```
 
 ## Samtools Flagstat Dockerflow - Ready
 
