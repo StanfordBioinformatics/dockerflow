@@ -1,0 +1,19 @@
+name: Vcf2CsvWellderly
+description: Convert Gzipped Wellderly VCFs to a basic CSV format
+
+inputParameters:
+- name: wellderly_vcf_gz
+  type: file
+- name: pipeline_run
+  defaultValue: "${workflow.index}"
+
+outputParameters:
+- name: wellderly_csv
+  defaultValue: "wellderly.csv"
+  type: file
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/vcf2csv_wellderly:1.0'
+  cmd: |
+    echo "python vcf2csv_wellderly.py -i ${wellderly_vcf_gz} -o ${wellderly_csv}"
+    python vcf2csv_wellderly.py -i ${wellderly_vcf_gz} -o ${wellderly_csv}

@@ -1,0 +1,26 @@
+version: v1alpha2
+defn:
+  name: Vcf2CsvWellderly
+  description: "Convert a set of gzipped Wellderly CG VCF files to CSV"
+
+graph:
+- Vcf2CsvWellderly
+- ConcatenateFiles
+
+steps: 
+- defn:
+    name: Vcf2CsvWellderly
+  defnFile: task-vcf2csv-wellderly.yaml
+  scatterBy: wellderly_vcf_gz
+  gatherBy: pipeline_run
+- defn:
+    name: ConcatenateFiles
+  defnFile: task-concatenate-files.yaml
+
+args:
+  inputs:
+    ConcatenateFiles.input_files: "${Vcf2CsvWellderly.wellderly_csv}"
+  #outputs:
+  #  Vcf2CsvWellderly.wellderly_csv: "wellderly.csv"
+  # From command-line
+    # --inputs-fron-file=Vcf2CsvWellderly.wellderly_vcf_gz=<list of vcfs file>
