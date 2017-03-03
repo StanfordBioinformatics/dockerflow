@@ -1,11 +1,4 @@
 #!/usr/bin/env python
-# version: 0.2
-
-''' Changes from vcf2csv_wellderly:
-    Added frequency metrics to match those reported in Wellderly paper.
-    Added variant_type from VCF file
-
-'''
 
 import os
 import re
@@ -27,14 +20,11 @@ def main():
     out_fh = open(args.output_csv, 'w')
 
     # reference_name start END reference_bases alternate_bases allele_frequency 
-    #out_fh.write('reference_name,start,END,reference_bases,alternate_bases,allele_frequency,allele_count,frequency_type\n')
+    #out_fh.write('reference_name,start,END,reference_bases,alternate_bases,allele_frequency,allele_count\n')
 
     # Find all matching files
     #for vcf_file in glob.glob(args.pattern):
     #    vcf_fh = gzip.open(vcf_file, 'r')
-
-    # illumina columns: #CHROM POS ID REF ALT QUAL FILTER INFO
-    # cg columns:       #CHROM POS ID REF ALT QUAL FILTER INFO
 
     vcf_fh = gzip.open(args.input_vcf_gz, 'r')
     for line in vcf_fh:
@@ -64,7 +54,6 @@ def main():
             print info
             print line
             continue
-        variant_type = elements[0]
         allele_freq = elements[7]
         allele_count = elements[8]
 
@@ -108,43 +97,14 @@ def main():
                 print alt_base_data
                 sys.exit()
 
-            # Categorize by AAA allele freq criteria [common,low,rare,singleton,none]
-            aaa_freq_category = None
-            if allele_count > 1:
-                if float(allele_freq) >= 0.05:
-                    aaa_freq_category = 'common'
-                elif float(allele_freq) >= 0.005 and float(allele_freq) < 0.05:
-                    aaa_freq_category = 'low'
-                elif float(allele_freq) < 0.005:
-                    aaa_freq_category = 'rare'
-            elif allele_count == 1:
-                aaa_freq_category = 'singleton'
-            else:
-                aaa_freq_category = 'absent'
-
-            # Categorize by Scripps allele freq criteria [rare, uncommon, common]
-            scripps_freq_category = None
-            if allele_count >= 1:
-                if float(allele_freq) > 0.05:
-                    scripps_freq_category = 'common'
-                elif float(allele_freq) >= 0.01 and float(allele_freq) <= 0.05:
-                    scripps_freq_category = 'uncommon'
-                elif float(allele_freq) < 0.01:
-                    scripps_freq_category = 'rare'
-            else:
-                scripps_freq_category = 'absent' 
-
             csv_elements = [
                             ref_name,
                             start,
                             end,
                             ref_bases,
                             alt_base,
-                            variant_type,
                             allele_freq,
-                            allele_count,
-                            aaa_freq_category,
-                            scripps_freq_category]
+                            allele_count]
             csv_out = ','.join(csv_elements) + '\n'
             out_fh.write(csv_out)
 
