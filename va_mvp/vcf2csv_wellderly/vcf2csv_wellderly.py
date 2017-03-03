@@ -44,7 +44,7 @@ def main():
             #out_fh.write(line)
             continue
 
-        fields = line.split()
+        fields = line.split('\t')
         ref_name = fields[0]
         start = str(int(fields[1]) - 1)
         end = str(int(fields[1]))
@@ -101,8 +101,8 @@ def main():
 
         for alt_base in alt_base_data:
             try:
-                allele_freq = allele_freq_dict[alt_base]
-                allele_count = allele_count_dict[alt_base]
+                allele_freq = float(allele_freq_dict[alt_base])
+                allele_count = int(allele_count_dict[alt_base])
             except:
                 print line
                 print alt_base_data
@@ -141,8 +141,8 @@ def main():
                             ref_bases,
                             alt_base,
                             variant_type,
-                            allele_freq,
-                            allele_count,
+                            str(allele_freq),
+                            str(allele_count),
                             aaa_freq_category,
                             scripps_freq_category]
             csv_out = ','.join(csv_elements) + '\n'
