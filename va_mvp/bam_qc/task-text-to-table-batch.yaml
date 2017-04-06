@@ -1,0 +1,48 @@
+name: TextToTable
+description: Convert variably structured text data to CSV format
+
+inputParameters:
+- name: inputs_list
+  localCopy:
+    disk: data
+    path: "inputs_list.txt"
+- name: series
+- name: sample_index
+- name: config_file
+  localCopy:
+    disk: data
+    path: "config.json"
+- name: output_prefix
+- name: gs_output_path
+
+resources:
+  disks:
+  - name: data
+    type: PERSISTENT_HDD
+    sizeGb: 10
+    mountPoint: /mnt/data
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/text_to_table:1.01'
+  cmd: |    
+    # Specify input & output paths
+    input_path="/mnt/data/input/input.txt"
+    output_path="/mnt/data/output/output.csv"
+    mkdir /mnt/data/input
+    mkdir /mnt/data/output
+    # Serially process batch of input files
+    while IFS= read -r file
+    do
+      # Get sample id
+      sample=`echo $file | cut -f${sample_index} -d/`
+      echo ${file}
+      echo ${sample}
+      # Copy file from GCS to local VM
+      gsutil cp ${file} ${input_path}
+      # Run python script
+      python convert_text_to_table.py -i ${input_path} -o ${output_path} -c ${config_file} -s ${series} -a ${sample}
+      # Copy CSV file back to Cloud Storage
+      gs_output_table=${gs_output_path}/${output_prefix}_${sample}.csv
+      echo ${gs_output_table}
+      gsutil cp ${output_path} ${gs_output_table}
+    done < ${inputs_list}

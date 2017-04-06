@@ -1,0 +1,24 @@
+version: v1alpha2
+defn:
+  name: BinaFastQC
+  description: "Run FastQC on a series of bam files, convert to table, and concatenate."
+
+graph:
+- TextToTable
+
+steps: 
+- defn:
+    name: TextToTable
+  defnFile: task-text-to-table-batch.yaml
+  scatterBy: inputs_list
+
+args:
+  inputs:
+    ### From command-line
+    # --inputs-fron-file=TextToTable.inputs_list=<list of list of files>
+    # --inputs=TextToTable.series=<arbitrary_name>,\
+    #          TextToTable.sample_index=<sample_element_in_filename>
+    #          TextToTable.config_file=<JSON file>,\     
+    #          TextToTable.output_prefix=<table_prefix>,\
+    #          TextToTable.gs_output_path=<gs_path>
+    ###
