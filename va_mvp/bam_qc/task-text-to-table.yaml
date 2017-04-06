@@ -1,0 +1,36 @@
+name: TextToTable
+description: Convert variably structured text data to CSV
+
+inputParameters:
+- name: fastqc_data
+  localCopy:
+    disk: data
+    path: "input.bam"
+- name: series
+- name: sample
+- name: config_file
+  localCopy:
+    disk: data
+    path: "config.json"
+- name: pipeline_run
+  defaultValue: "${workflow.index}"
+
+outputParameters:
+- name: fastqc_table
+  defaultValue: "${sample}_fastqc_data.csv"
+  localCopy:
+    disk: data
+    path: "fastqc_data.csv"
+
+resources:
+  disks:
+  - name: data
+    type: PERSISTENT_HDD
+    sizeGb: 10
+    mountPoint: /mnt/data
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/text_to_table:1.0'
+  cmd: |    
+    python convert_text_to_table.py -i ${fastqc_data} -o ${fastqc_table} \
+      -c ${config_file} -s ${series} -a ${sample}

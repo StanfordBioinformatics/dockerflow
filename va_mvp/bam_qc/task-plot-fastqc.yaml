@@ -1,0 +1,29 @@
+name: PlotFastQC
+description: Parse concatenated fastqc output to generate summary figures
+
+inputParameters:
+- name: fastqc_file
+  type: file
+- name: series
+
+outputParameters:
+- name: fastqc_table
+  defaultValue: fastqc_table.txt
+  type: file
+- name: base_qual_plot
+  defaultValue: "${series}.mean_base_qual.png"
+  type: file
+- name: mapped_reads_plot
+  defaultValue: "${series}.mean_seq_qual.png"
+  type: file
+- name: properly_paired_plot
+  defaultValue: "${series}.gc_content.png"
+  type: file
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/plot_fastqc:1.3'
+  cmd: |
+    echo ${base_qual_plot}
+    arbitrary_id="$( cut -d '-' -f 1 <<< "${base_qual_plot##*/}" )"
+    python parse_fastqc_concat.py ${fastqc_file} ${series} ${fastqc_table}
+    Rscript plot_fastqc_concat.R -f ${fastqc_table} -o /mnt/data/${arbitrary_id}-${series}
