@@ -1,0 +1,38 @@
+version: v1alpha2
+defn:
+  name: RtgVcfstats
+  description: "Run rtg-tools vcfstats on a gzipped VCF/gVCF file"
+
+graph:
+- RunRtgVcfstats
+- Text2Table
+- ConcatenateFiles
+
+steps: 
+- defn:
+    name: RunRtgVcfstats
+  defnFile: task-rtg-vcfstats.yaml
+  scatterBy: vcf_gz
+- defn:
+    name: Text2Table
+  defnFile: task-text-to-table.yaml
+  scatterBy: input_file
+  gatherBy: pipeline_run
+- defn:
+    name: ConcatenateFiles
+  defnFile: task-concat-files.yaml
+
+args:
+  inputs:
+    ### From command-line
+    # --inputs-fron-file=RunRtgVcfstats.vcf_gz=<list of gvcf.gz files>
+    ###
+
+args:
+  inputs:
+    # From command-line
+    # --inputs-fron-file=Text2Table.input_file=<input_file>
+    # --inputs=ConcatenateFiles.concat_file=<gs_path_to_concat_file>
+    Text2Table.input_file: "${RunRtgVcfstats.vcfstats}"
+    Text2Table.schema: "rtg_vcfstats"
+    ConcatenateFiles.input_files: "${Text2Table.output_csv}"

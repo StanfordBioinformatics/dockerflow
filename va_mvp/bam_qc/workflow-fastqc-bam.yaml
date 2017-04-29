@@ -1,0 +1,31 @@
+version: v1alpha2
+defn:
+  name: FastQCBam
+  description: "Run FastQC on a list of bam files"
+
+graph:
+- FastQCBam
+- Text2Table
+- ConcatenateFiles
+
+steps: 
+- defn:
+    name: FastQCBam
+  defnFile: task-fastqc-bam.yaml
+  scatterBy: input_bam
+- defn:
+    name: Text2Table
+  defnFile: task-text-to-table.yaml
+  gatherBy: pipeline_run
+- defn:
+    name: ConcatenateFiles
+  defnFile: task-concat-files.yaml
+
+args:
+  inputs:
+    # From command-line
+    # --inputs-fron-file=FastQCBam.input_bam=<input_file>
+    # --inputs=ConcatenateFiles.concat_file=<gs_path_to_concat_file>
+    Text2Table.input_file: "${FastQCBam.fastqc_data}"
+    Text2Table.schema: "fastqc"
+    ConcatenateFiles.input_files: "${Text2Table.output_csv}"

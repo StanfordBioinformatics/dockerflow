@@ -1,0 +1,25 @@
+version: v1alpha2
+defn:
+  name: Text2TableConcat
+  description: Convert text files to CSV and concatenate
+
+graph:
+- Text2Table
+- ConcatenateFiles
+
+steps: 
+- defn:
+    name: Text2Table
+  defnFile: task-text-to-table.yaml
+  scatterBy: input_file
+  gatherBy: pipeline_run
+- defn:
+    name: ConcatenateFiles
+  defnFile: task-concat-files.yaml
+
+args:
+  inputs:
+    # From command-line
+    # --inputs-fron-file=Text2Table.input_file=<input_file>
+    # --inputs=ConcatenateFiles.concat_file=<gs_path_to_concat_file>
+    ConcatenateFiles.input_files: "${Text2Table.output_csv}"

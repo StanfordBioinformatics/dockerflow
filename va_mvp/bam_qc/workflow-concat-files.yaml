@@ -1,0 +1,18 @@
+version: v1alpha2
+defn:
+  name: ConcatFiles
+  description: "Concatenate list of input files."
+
+graph:
+- ConcatenateFiles
+
+steps: 
+- defn:
+    name: ConcatenateFiles
+  defnFile: task-concat-files.yaml
+
+args:
+  inputs:
+    #### From command-line
+    # --inputs-fron-file=ConcatenateFiles.input_files=<list_of_files>
+    ####

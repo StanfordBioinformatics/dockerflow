@@ -1,0 +1,29 @@
+version: v1alpha2
+defn:
+  name: Flagstat
+  description: '''Run Samtools Flagstat on a list of bam files, 
+                convert to CSV, and concatenate resulting text files'''
+
+graph:
+- RunFlagstat
+- Text2Table
+- ConcatenateFiles
+
+steps: 
+- defn:
+    name: RunFlagstat
+  defnFile: task-flagstat.yaml
+  scatterBy: input_bam
+- defn:
+    name: Text2Table
+  defnFile: task-text-to-table.yaml
+  gatherBy: pipeline_run
+- defn:
+    name: ConcatenateFiles
+  defnFile: task-concat-files.yaml
+
+args:
+  inputs:
+    Text2Table.input_file: "${RunFlagstat.flagstat_file}"
+    Text2Table.schema: "flagstat"
+    ConcatenateFiles.input_files: "${Text2Table.output_csv}"
