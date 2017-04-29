@@ -1,0 +1,23 @@
+name: RunRtgVcfstats
+description: Run rtg-tools to get vcfstats
+
+inputParameters:
+- name: vcf_gz
+  type: file
+
+outputParameters:
+- name: vcfstats
+  defaultValue: "${vcf_gz}.rtg.vcfstats" 
+  type: file
+
+resources:
+  disks:
+  - name: data
+    type: PERSISTENT_HDD
+    sizeGb: 100
+    mountPoint: /mnt/data
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/rtg-tools:1.0'
+  cmd: |    
+    rtg vcfstats ${vcf_gz} > ${vcfstats}

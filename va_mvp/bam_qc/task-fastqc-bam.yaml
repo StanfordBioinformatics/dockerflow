@@ -1,0 +1,40 @@
+name: FastQCBam
+description: Run FastQC on a bam file
+
+inputParameters:
+- name: input_bam
+  localCopy:
+    disk: data
+    path: "input.bam"
+- name: pipeline_run
+  defaultValue: "${workflow.index}"
+
+outputParameters:
+- name: fastqc_zip
+  defaultValue: "${input_bam}.fastqc.zip"
+  localCopy:
+    disk: data
+    path: "input_fastqc.zip"
+- name: fastqc_html
+  defaultValue: "${input_bam}.fastqc.html"
+  localCopy:
+    disk: data
+    path: "input_fastqc.html"
+- name: fastqc_data
+  defaultValue: "${input_bam}.fastqc_data.txt"
+  localCopy:
+    disk: data
+    path: "input_fastqc/fastqc_data.txt"
+
+resources:
+  disks:
+  - name: data
+    type: PERSISTENT_HDD
+    sizeGb: 500
+    mountPoint: /mnt/data
+
+docker:
+  imageName: 'gcr.io/gbsc-gcp-project-mvp/fastqc:1.01'
+  cmd: |    
+    fastqc ${input_bam}
+    unzip -d /mnt/data /mnt/data/input_fastqc.zip
