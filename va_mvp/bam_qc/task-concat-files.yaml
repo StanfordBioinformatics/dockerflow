@@ -9,7 +9,7 @@ inputParameters:
 
 outputParameters:
 - name: concat_file
-  defaultValue: concat_file.txt
+  #defaultValue: concat_file.txt
   type: file
 
 docker:
